@@ -22,7 +22,9 @@ const DashboardLayout = () => {
 
   // Close sidebar on route change (mobile) - but don't apply the effect on mount
   useEffect(() => {
+    // Create the ref inside the component function
     const isInitialMount = React.useRef(true);
+    
     if (isInitialMount.current) {
       isInitialMount.current = false;
     } else {
