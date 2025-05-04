@@ -14,6 +14,8 @@ import Dashboard from "./pages/Dashboard";
 import PermissionManagement from "./pages/permissions/PermissionManagement";
 import ThemeManagement from "./pages/themes/ThemeManagement";
 import UserCreation from "./pages/users/UserCreation";
+import UserManagement from "./pages/admin/UserManagement";
+import AttendanceManagement from "./pages/admin/AttendanceManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,8 +34,8 @@ const App = () => (
                   <Route path="permissions" element={<PermissionManagement />} />
                   <Route path="themes" element={<ThemeManagement />} />
                   <Route path="users" element={<UserCreation />} />
-                  <Route path="user-management" element={<div className="p-4">User Management (coming soon)</div>} />
-                  <Route path="attendance-management" element={<div className="p-4">Attendance Management (coming soon)</div>} />
+                  <Route path="user-management" element={<UserManagement />} />
+                  <Route path="attendance-management" element={<AttendanceManagement />} />
                   <Route path="salary-management" element={<div className="p-4">Salary Management (coming soon)</div>} />
                   <Route path="leave-approval" element={<div className="p-4">Leave Approval (coming soon)</div>} />
                   <Route path="transport" element={<div className="p-4">Transport Management (coming soon)</div>} />

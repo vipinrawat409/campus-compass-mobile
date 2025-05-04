@@ -20,9 +20,14 @@ const DashboardLayout = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  // Close sidebar on route change (mobile)
+  // Close sidebar on route change (mobile) - but don't apply the effect on mount
   useEffect(() => {
-    closeSidebar();
+    const isInitialMount = React.useRef(true);
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+    } else {
+      closeSidebar();
+    }
   }, [location.pathname, closeSidebar]);
 
   if (!isAuthenticated || !user) {
