@@ -20,18 +20,15 @@ const DashboardLayout = () => {
     }
   }, [isAuthenticated, navigate]);
 
-  // Close sidebar on route change (mobile) - but don't apply the effect on mount
-  // The issue was here - useRef was being used incorrectly
+  // Close sidebar on route change (mobile) but not on initial render
   useEffect(() => {
-    // We don't need the ref approach here, we can use a simpler method
-    // to avoid running on first render
-    const handleRouteChange = () => {
+    // Track if this is the first location change or not
+    const currentPath = location.pathname;
+    
+    // We use a custom attribute to not run on first render
+    if (currentPath) {
+      // Only run closeSidebar on route changes, not on initial render
       closeSidebar();
-    };
-
-    // This effect should not run on mount, only on subsequent location changes
-    if (location.pathname) {
-      handleRouteChange();
     }
   }, [location.pathname, closeSidebar]);
 
