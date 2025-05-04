@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "@/components/ui/sonner";
@@ -7,14 +8,14 @@ export type UserRole = 'superadmin' | 'admin' | 'teacher' | 'staff' | 'student' 
 
 // Define user interface
 export interface User {
+  id: string;
+  name: string;
   username: string;
   role: UserRole;
-  name: string;
-  instituteId?: string;
   instituteName?: string;
 }
 
-// Define context interface
+// Define the auth context interface
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
@@ -22,10 +23,10 @@ interface AuthContextType {
   logout: () => void;
 }
 
-// Create context
+// Create auth context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Create context provider
+// Auth provider component
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -35,13 +36,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
-      setIsAuthenticated(true);
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error('Failed to parse user from localStorage', error);
+        localStorage.removeItem('user');
+      }
     }
   }, []);
 
-  // Determine user role based on username prefix
-  const determineRole = (username: string): UserRole => {
+  // Helper to determine role based on username
+  const getRoleFromUsername = (username: string): UserRole => {
     const prefix = username.substring(0, 2).toUpperCase();
     
     switch (prefix) {
@@ -55,44 +62,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Mock login function that will be replaced with real API calls later
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (username: string, password: string) => {
     try {
       // This is a mock - in a real app, you'd validate against a backend
       if (password !== 'password') {
         toast("Invalid credentials", {
-          description: "Please check your username and password",
-          variant: "destructive",
+          description: "Please check your username and password"
         });
         return false;
       }
 
-      // Determine user role from username prefix
-      const role = determineRole(username);
+      const role = getRoleFromUsername(username);
       
-      // Create mock user based on role
       const mockUser: User = {
+        id: `user-${Date.now()}`,
+        name: `${role.charAt(0).toUpperCase() + role.slice(1)} User`,
         username,
         role,
-        name: getMockName(role, username),
-        instituteId: role === 'superadmin' ? undefined : 'inst-001',
-        instituteName: role === 'superadmin' ? undefined : 'Valley Public School'
       };
 
-      // Set user in state and local storage
+      // Add institute name for superadmin and admin roles
+      if (role === 'superadmin') {
+        mockUser.instituteName = 'All Institutes';
+      } else if (role === 'admin') {
+        mockUser.instituteName = 'Valley Public School';
+      }
+
       setUser(mockUser);
       setIsAuthenticated(true);
       localStorage.setItem('user', JSON.stringify(mockUser));
       
       toast("Login successful", {
-        description: `Welcome back, ${mockUser.name}`,
+        description: `Welcome back, ${mockUser.name}`
       });
       
       return true;
     } catch (error) {
       toast("Login failed", {
-        description: error instanceof Error ? error.message : "An unexpected error occurred",
-        variant: "destructive",
+        description: error instanceof Error ? error.message : "An unexpected error occurred"
       });
       return false;
     }
@@ -104,22 +111,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem('user');
     navigate('/');
     toast("Logged out", {
-      description: "You have been logged out successfully",
+      description: "You have been logged out successfully"
     });
-  };
-
-  // Helper function to generate mock names
-  const getMockName = (role: UserRole, username: string): string => {
-    const id = username.substring(2);
-    switch (role) {
-      case 'superadmin': return `Super Admin ${id}`;
-      case 'admin': return `Admin ${id}`;
-      case 'teacher': return `Teacher ${id}`;
-      case 'staff': return `Staff ${id}`;
-      case 'student': return `Student ${id}`;
-      case 'parent': return `Parent ${id}`;
-      default: return `User ${id}`;
-    }
   };
 
   return (
@@ -129,7 +122,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-// Create custom hook for using auth context
+// Custom hook to use auth context
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {

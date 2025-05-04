@@ -11,6 +11,9 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import LoginPage from "./pages/LoginPage";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
+import PermissionManagement from "./pages/permissions/PermissionManagement";
+import ThemeManagement from "./pages/themes/ThemeManagement";
+import UserCreation from "./pages/users/UserCreation";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,9 +29,9 @@ const App = () => (
                 <Route path="/" element={<LoginPage />} />
                 <Route path="/dashboard" element={<DashboardLayout />}>
                   <Route index element={<Dashboard />} />
-                  <Route path="permissions" element={<div className="p-4">Permission Management (coming soon)</div>} />
-                  <Route path="themes" element={<div className="p-4">Theme Management (coming soon)</div>} />
-                  <Route path="users" element={<div className="p-4">User Creation (coming soon)</div>} />
+                  <Route path="permissions" element={<PermissionManagement />} />
+                  <Route path="themes" element={<ThemeManagement />} />
+                  <Route path="users" element={<UserCreation />} />
                   <Route path="user-management" element={<div className="p-4">User Management (coming soon)</div>} />
                   <Route path="attendance-management" element={<div className="p-4">Attendance Management (coming soon)</div>} />
                   <Route path="salary-management" element={<div className="p-4">Salary Management (coming soon)</div>} />

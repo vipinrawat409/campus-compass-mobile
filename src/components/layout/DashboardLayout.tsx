@@ -44,19 +44,21 @@ const DashboardLayout = () => {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Mobile sidebar */}
+      {/* Mobile overlay - when sidebar is open */}
       <div 
         className={cn(
           "fixed inset-0 bg-black/50 z-30 transition-opacity duration-200 lg:hidden",
           isSidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
         onClick={closeSidebar}
+        aria-hidden="true"
       />
       
-      <div 
+      {/* Sidebar - mobile and desktop */}
+      <aside 
         className={cn(
-          "fixed inset-y-0 left-0 w-64 bg-white z-40 transition-transform duration-200 shadow-lg lg:shadow-none lg:transform-none lg:static",
-          isSidebarOpen ? "transform-none" : "-translate-x-full"
+          "fixed inset-y-0 left-0 w-64 bg-white z-40 transition-transform duration-200 shadow-lg lg:shadow-none lg:translate-x-0 lg:static",
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         <div className="flex h-16 items-center justify-between px-4 border-b">
@@ -64,13 +66,14 @@ const DashboardLayout = () => {
           <button 
             onClick={closeSidebar} 
             className="lg:hidden p-2 rounded-md hover:bg-gray-100"
+            aria-label="Close sidebar"
           >
             <X size={20} />
           </button>
         </div>
         
         <Sidebar />
-      </div>
+      </aside>
       
       {/* Main content */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
@@ -79,6 +82,8 @@ const DashboardLayout = () => {
           <button 
             onClick={toggleSidebar} 
             className="p-2 rounded-md hover:bg-gray-100 lg:hidden"
+            aria-label="Open sidebar"
+            aria-expanded={isSidebarOpen}
           >
             <Menu size={20} />
           </button>

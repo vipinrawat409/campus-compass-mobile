@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,8 +18,7 @@ const LoginPage = () => {
     e.preventDefault();
     if (!username || !password) {
       toast("Error", {
-        description: "Please enter both username and password",
-        variant: "destructive",
+        description: "Please enter both username and password"
       });
       return;
     }
