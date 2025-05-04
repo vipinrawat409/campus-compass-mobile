@@ -1,7 +1,6 @@
-
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useToast } from "@/components/ui/toast";
+import { toast } from "@/components/ui/sonner";
 
 // Define user roles
 export type UserRole = 'superadmin' | 'admin' | 'teacher' | 'staff' | 'student' | 'parent';
@@ -31,7 +30,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const navigate = useNavigate();
-  const { toast } = useToast();
 
   // Check for existing user in localStorage on initial load
   useEffect(() => {
@@ -62,8 +60,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       // This is a mock - in a real app, you'd validate against a backend
       if (password !== 'password') {
-        toast({
-          title: "Invalid credentials",
+        toast("Invalid credentials", {
           description: "Please check your username and password",
           variant: "destructive",
         });
@@ -87,15 +84,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsAuthenticated(true);
       localStorage.setItem('user', JSON.stringify(mockUser));
       
-      toast({
-        title: "Login successful",
+      toast("Login successful", {
         description: `Welcome back, ${mockUser.name}`,
       });
       
       return true;
     } catch (error) {
-      toast({
-        title: "Login failed",
+      toast("Login failed", {
         description: error instanceof Error ? error.message : "An unexpected error occurred",
         variant: "destructive",
       });
@@ -108,8 +103,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsAuthenticated(false);
     localStorage.removeItem('user');
     navigate('/');
-    toast({
-      title: "Logged out",
+    toast("Logged out", {
       description: "You have been logged out successfully",
     });
   };
