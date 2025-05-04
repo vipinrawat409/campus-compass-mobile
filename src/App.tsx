@@ -16,6 +16,19 @@ import ThemeManagement from "./pages/themes/ThemeManagement";
 import UserCreation from "./pages/users/UserCreation";
 import UserManagement from "./pages/admin/UserManagement";
 import AttendanceManagement from "./pages/admin/AttendanceManagement";
+import SalaryManagement from "./pages/admin/SalaryManagement";
+import LeaveApproval from "./pages/admin/LeaveApproval";
+import TransportManagement from "./pages/admin/TransportManagement";
+import NoticeManagement from "./pages/admin/NoticeManagement";
+import TimeTableManagement from "./pages/admin/TimeTableManagement";
+import FeesManagement from "./pages/admin/FeesManagement";
+import Profile from "./pages/common/Profile";
+import Attendance from "./pages/student/Attendance";
+import Marks from "./pages/student/Marks";
+import Report from "./pages/student/Report";
+import IDCard from "./pages/student/IDCard";
+import NoticesView from "./pages/common/NoticesView";
+import Leave from "./pages/common/Leave";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,19 +49,19 @@ const App = () => (
                   <Route path="users" element={<UserCreation />} />
                   <Route path="user-management" element={<UserManagement />} />
                   <Route path="attendance-management" element={<AttendanceManagement />} />
-                  <Route path="salary-management" element={<div className="p-4">Salary Management (coming soon)</div>} />
-                  <Route path="leave-approval" element={<div className="p-4">Leave Approval (coming soon)</div>} />
-                  <Route path="transport" element={<div className="p-4">Transport Management (coming soon)</div>} />
-                  <Route path="notices" element={<div className="p-4">Notice Management (coming soon)</div>} />
-                  <Route path="timetable-management" element={<div className="p-4">Time Table Management (coming soon)</div>} />
-                  <Route path="fees" element={<div className="p-4">Fees Management (coming soon)</div>} />
-                  <Route path="profile" element={<div className="p-4">Profile (coming soon)</div>} />
-                  <Route path="attendance" element={<div className="p-4">Attendance (coming soon)</div>} />
-                  <Route path="marks" element={<div className="p-4">Marks (coming soon)</div>} />
-                  <Route path="report" element={<div className="p-4">Report (coming soon)</div>} />
-                  <Route path="id-card" element={<div className="p-4">ID Card (coming soon)</div>} />
-                  <Route path="notices-view" element={<div className="p-4">Notices (coming soon)</div>} />
-                  <Route path="leave" element={<div className="p-4">Leave (coming soon)</div>} />
+                  <Route path="salary-management" element={<SalaryManagement />} />
+                  <Route path="leave-approval" element={<LeaveApproval />} />
+                  <Route path="transport" element={<TransportManagement />} />
+                  <Route path="notices" element={<NoticeManagement />} />
+                  <Route path="timetable-management" element={<TimeTableManagement />} />
+                  <Route path="fees" element={<FeesManagement />} />
+                  <Route path="profile" element={<Profile />} />
+                  <Route path="attendance" element={<Attendance />} />
+                  <Route path="marks" element={<Marks />} />
+                  <Route path="report" element={<Report />} />
+                  <Route path="id-card" element={<IDCard />} />
+                  <Route path="notices-view" element={<NoticesView />} />
+                  <Route path="leave" element={<Leave />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>

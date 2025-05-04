@@ -9,7 +9,7 @@ import Sidebar from './Sidebar';
 
 const DashboardLayout = () => {
   const { isAuthenticated, user, logout } = useAuth();
-  const { isSidebarOpen, toggleSidebar, closeSidebar } = useNavigation();
+  const { isSidebarOpen, toggleSidebar, closeSidebar, openSidebar } = useNavigation();
   const navigate = useNavigate();
   const location = useLocation();
 
