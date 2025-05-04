@@ -1,9 +1,9 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar as CalendarIcon, CheckCircle, Search, Calendar, Clock } from "lucide-react";
+import { Calendar as CalendarIcon, CheckCircle, Search, Clock } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -67,7 +67,7 @@ const AttendanceManagement = () => {
               <Calendar
                 mode="single"
                 selected={date}
-                onSelect={setDate}
+                onSelect={(selectedDate) => setDate(selectedDate)}
                 initialFocus
               />
             </PopoverContent>
@@ -143,7 +143,7 @@ const AttendanceManagement = () => {
               title="On Leave" 
               value={activeTab === "teachers" ? "2" : "1"} 
               description="Approved leaves" 
-              icon={<Calendar className="h-4 w-4 text-yellow-600" />}
+              icon={<CalendarDays className="h-4 w-4 text-yellow-600" />} // Updated to CalendarDays
               className="border-yellow-100"
             />
             <StatsCard 
