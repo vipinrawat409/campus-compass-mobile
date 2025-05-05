@@ -81,8 +81,11 @@ const TimeTableManagement = () => {
         // Generate timetable using our algorithm
         const { timetable, conflicts } = generateTimetable(settings);
         
-        // Update state with new timetable
-        setTimetableData(timetable);
+        // Update state with new timetable - fixed type issue here
+        setTimetableData(prevData => ({
+          ...prevData,
+          ...timetable
+        }));
         
         if (conflicts.length === 0) {
           toast({
@@ -191,18 +194,19 @@ const TimeTableManagement = () => {
         </div>
 
         <div className="mb-6">
-          <TabsList className="w-full bg-gray-100">
-            {days.map((day) => (
-              <TabsTrigger 
-                key={day.id} 
-                value={day.id}
-                className="flex-1"
-                onClick={() => setSelectedDay(day.id)}
-              >
-                {day.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          <Tabs value={selectedDay} onValueChange={setSelectedDay}>
+            <TabsList className="w-full bg-gray-100">
+              {days.map((day) => (
+                <TabsTrigger 
+                  key={day.id} 
+                  value={day.id}
+                  className="flex-1"
+                >
+                  {day.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
         </div>
 
         <div className="overflow-x-auto">
