@@ -29,6 +29,8 @@ import Report from "./pages/student/Report";
 import IDCard from "./pages/student/IDCard";
 import NoticesView from "./pages/common/NoticesView";
 import Leave from "./pages/common/Leave";
+import StaffLeave from "./pages/staff/StaffLeave";
+import StaffSalary from "./pages/staff/StaffSalary";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -62,6 +64,8 @@ const App = () => (
                   <Route path="id-card" element={<IDCard />} />
                   <Route path="notices-view" element={<NoticesView />} />
                   <Route path="leave" element={<Leave />} />
+                  <Route path="staff-leave" element={<StaffLeave />} />
+                  <Route path="staff-salary" element={<StaffSalary />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>

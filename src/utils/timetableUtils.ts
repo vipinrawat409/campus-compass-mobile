@@ -13,6 +13,7 @@ type Teacher = {
   subjects: string[];
   classes: string[];
   unavailablePeriods?: { day: string; period: number }[];
+  absent?: boolean;
 };
 
 type Room = {
@@ -66,6 +67,10 @@ const mockTeachers: Teacher[] = [
   { id: 't9', name: 'Mr. Martin', subjects: ['Music'], classes: ['10-A', '10-B', '9-A', '9-B', '8-A', '8-B', '7-A', '7-B'] },
   { id: 't10', name: 'Dr. Lewis', subjects: ['Science'], classes: ['8-A', '8-B', '7-A', '7-B'] },
   { id: 't11', name: 'Mrs. Clark', subjects: ['Science'], classes: ['9-A', '9-B', '8-A', '8-B'] },
+  { id: 't12', name: 'Mr. Rodriguez', subjects: ['Mathematics'], classes: ['7-A', '7-B', '8-A'] },
+  { id: 't13', name: 'Ms. White', subjects: ['English'], classes: ['10-B', '9-B', '8-B', '7-A'] },
+  { id: 't14', name: 'Mrs. Harris', subjects: ['History'], classes: ['8-A', '8-B', '7-A', '7-B'] },
+  { id: 't15', name: 'Dr. Anderson', subjects: ['Geography'], classes: ['10-B', '9-A', '8-B', '7-B'] },
 ];
 
 const mockRooms: Room[] = [
@@ -110,6 +115,11 @@ const isTeacherAvailable = (
   period: number,
   assignments: Assignment[]
 ): boolean => {
+  // Check if teacher is absent
+  if (teacher.absent) {
+    return false;
+  }
+  
   // Check if teacher is already assigned to this period on this day
   return !assignments.some(
     assignment => 
@@ -173,7 +183,7 @@ const getTeacherForSubject = (
   assignments: Assignment[]
 ): Teacher | null => {
   const eligibleTeachers = mockTeachers.filter(teacher => 
-    teacher.subjects.includes(subject.name) && teacher.classes.includes(className)
+    teacher.subjects.includes(subject.name) && teacher.classes.includes(className) && !teacher.absent
   );
   
   // Find first available teacher
@@ -329,11 +339,154 @@ export const generateTimetable = (settings: any) => {
 
 // Function to find potential substitutes for an absent teacher
 export const findSubstituteTeachers = (absentTeacher: string, subject: string, period: string, day: string) => {
+  // Get absent teacher details
+  const teacherDetails = mockTeachers.find(t => t.name === absentTeacher);
+  
+  if (!teacherDetails) return [];
+  
   // Filter teachers who teach the same subject
   const potentialSubstitutes = mockTeachers.filter(teacher => 
-    teacher.name !== absentTeacher && teacher.subjects.includes(subject)
+    teacher.name !== absentTeacher && 
+    teacher.subjects.includes(subject) && 
+    !teacher.absent
   );
   
-  // In a real app, we would check these teachers' schedules to see if they're available
+  // In a real app, we would check these teachers' schedules to see if they're available during this specific period
   return potentialSubstitutes;
+};
+
+// Function to check for conflicts when manually adjusting timetable
+export const checkForConflict = (
+  day: string,
+  period: number,
+  teacherId: string, 
+  roomId: string,
+  className: string,
+  existingTimetable: Record<string, any[]>
+): { hasConflict: boolean, message: string } => {
+  // Get existing periods for this day
+  const daySchedule = existingTimetable[day] || [];
+  
+  // Find time slots at this period
+  const sameTimeSlots = daySchedule.filter(slot => {
+    // Extract period number from time
+    const slotTime = slot.time;
+    const slotPeriod = daySchedule.indexOf(slot);
+    return slotPeriod === period;
+  });
+  
+  // Check for teacher conflicts
+  const teacherConflict = sameTimeSlots.some(slot => 
+    slot.teacher === mockTeachers.find(t => t.id === teacherId)?.name && 
+    slot.class !== className
+  );
+  
+  if (teacherConflict) {
+    return { 
+      hasConflict: true, 
+      message: `Teacher already has a class during this period on ${day}.` 
+    };
+  }
+  
+  // Check for room conflicts
+  const roomConflict = sameTimeSlots.some(slot => 
+    slot.room === mockRooms.find(r => r.id === roomId)?.name && 
+    slot.class !== className
+  );
+  
+  if (roomConflict) {
+    return { 
+      hasConflict: true, 
+      message: `Room is already occupied during this period on ${day}.` 
+    };
+  }
+  
+  // Check if class already has another subject at this time
+  const classConflict = sameTimeSlots.some(slot => 
+    slot.class === className
+  );
+  
+  if (classConflict) {
+    return { 
+      hasConflict: true, 
+      message: `Class already has a subject scheduled at this time on ${day}.` 
+    };
+  }
+  
+  return { hasConflict: false, message: '' };
+};
+
+// Function to mark a teacher as absent and find substitutes
+export const markTeacherAbsent = (
+  teacherId: string,
+  date: string
+): void => {
+  // Find the teacher
+  const teacherIndex = mockTeachers.findIndex(t => t.id === teacherId);
+  if (teacherIndex >= 0) {
+    mockTeachers[teacherIndex].absent = true;
+  }
+};
+
+// Function to get available teachers for substitution
+export const getAvailableSubstitutes = (
+  subjectName: string,
+  day: string,
+  period: number,
+  existingTimetable: Record<string, any[]>
+): Teacher[] => {
+  // Get all teachers who teach this subject
+  const eligibleTeachers = mockTeachers.filter(teacher => 
+    teacher.subjects.includes(subjectName) && !teacher.absent
+  );
+  
+  // Check if they are available during this period
+  return eligibleTeachers.filter(teacher => {
+    const daySchedule = existingTimetable[day] || [];
+    
+    // Find periods at this time slot
+    const sameTimeSlots = daySchedule.filter(slot => {
+      const slotPeriod = daySchedule.indexOf(slot);
+      return slotPeriod === period;
+    });
+    
+    // Check if teacher is already teaching during this period
+    return !sameTimeSlots.some(slot => slot.teacher === teacher.name);
+  });
+};
+
+// Function to get class-specific timetable for the week
+export const getClassTimetable = (
+  className: string,
+  timetable: Record<string, any[]>
+): Record<string, any[]> => {
+  const classTimetable: Record<string, any[]> = {};
+  
+  Object.keys(timetable).forEach(day => {
+    classTimetable[day] = timetable[day].filter(slot => slot.class === className);
+  });
+  
+  return classTimetable;
+};
+
+// Function to get teacher-specific timetable for the week
+export const getTeacherTimetable = (
+  teacherId: string,
+  timetable: Record<string, any[]>
+): Record<string, any[]> => {
+  const teacher = mockTeachers.find(t => t.id === teacherId);
+  if (!teacher) return {};
+  
+  const teacherName = teacher.name;
+  const teacherTimetable: Record<string, any[]> = {};
+  
+  Object.keys(timetable).forEach(day => {
+    teacherTimetable[day] = timetable[day].filter(slot => 
+      slot.teacher === teacherName && 
+      slot.subject !== 'Break' && 
+      slot.subject !== 'Lunch'
+    );
+  });
+  
+  return teacherTimetable;
 };

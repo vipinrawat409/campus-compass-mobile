@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, Plus, Edit, Trash2, RefreshCw, Bell, User } from 'lucide-react';
+import { Calendar, Clock, Plus, Edit, Trash2, RefreshCw, Bell, User, AlertCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -9,7 +9,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import TimeTableGenerator from "@/components/timetable/TimeTableGenerator";
 import SubstitutionModal from "@/components/timetable/SubstitutionModal";
-import { generateTimetable } from "@/utils/timetableUtils";
+import { generateTimetable, checkForConflict } from "@/utils/timetableUtils";
 import { 
   Table,
   TableBody,
@@ -26,34 +26,36 @@ const TimeTableManagement = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [showGenerator, setShowGenerator] = useState(false);
   const [showSubstitution, setShowSubstitution] = useState(false);
+  const [showManualAdjustment, setShowManualAdjustment] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState(null);
+  const [conflicts, setConflicts] = useState([]);
   const [timetableData, setTimetableData] = useState({
     monday: [
-      { id: 1, time: '08:00 - 08:45', subject: 'Mathematics', teacher: 'Mr. Johnson', room: 'Room 101' },
-      { id: 2, time: '08:45 - 09:30', subject: 'Science', teacher: 'Mrs. Smith', room: 'Lab 1' },
-      { id: 3, time: '09:30 - 10:15', subject: 'English', teacher: 'Ms. Davis', room: 'Room 102' },
-      { id: 4, time: '10:15 - 11:00', subject: 'Break', teacher: '-', room: '-' },
-      { id: 5, time: '11:00 - 11:45', subject: 'History', teacher: 'Mr. Wilson', room: 'Room 103' },
-      { id: 6, time: '11:45 - 12:30', subject: 'Geography', teacher: 'Mrs. Taylor', room: 'Room 104' },
-      { id: 7, time: '12:30 - 13:15', subject: 'Lunch', teacher: '-', room: '-' },
-      { id: 8, time: '13:15 - 14:00', subject: 'Computer Science', teacher: 'Mr. Brown', room: 'Computer Lab' },
-      { id: 9, time: '14:00 - 14:45', subject: 'Physical Education', teacher: 'Mr. Thomas', room: 'Playground' }
+      { id: 1, time: '08:00 - 08:45', subject: 'Mathematics', teacher: 'Mr. Johnson', room: 'Room 101', class: '10-A' },
+      { id: 2, time: '08:45 - 09:30', subject: 'Science', teacher: 'Mrs. Smith', room: 'Lab 1', class: '10-A' },
+      { id: 3, time: '09:30 - 10:15', subject: 'English', teacher: 'Ms. Davis', room: 'Room 102', class: '10-A' },
+      { id: 4, time: '10:15 - 11:00', subject: 'Break', teacher: '-', room: '-', class: '10-A' },
+      { id: 5, time: '11:00 - 11:45', subject: 'History', teacher: 'Mr. Wilson', room: 'Room 103', class: '10-A' },
+      { id: 6, time: '11:45 - 12:30', subject: 'Geography', teacher: 'Mrs. Taylor', room: 'Room 104', class: '10-A' },
+      { id: 7, time: '12:30 - 13:15', subject: 'Lunch', teacher: '-', room: '-', class: '10-A' },
+      { id: 8, time: '13:15 - 14:00', subject: 'Computer Science', teacher: 'Mr. Brown', room: 'Computer Lab', class: '10-A' },
+      { id: 9, time: '14:00 - 14:45', subject: 'Physical Education', teacher: 'Mr. Thomas', room: 'Playground', class: '10-A' }
     ],
     tuesday: [
-      { id: 1, time: '08:00 - 08:45', subject: 'English', teacher: 'Ms. Davis', room: 'Room 102' },
-      { id: 2, time: '08:45 - 09:30', subject: 'Mathematics', teacher: 'Mr. Johnson', room: 'Room 101' },
-      { id: 3, time: '09:30 - 10:15', subject: 'Science', teacher: 'Mrs. Smith', room: 'Lab 1' },
-      { id: 4, time: '10:15 - 11:00', subject: 'Break', teacher: '-', room: '-' },
-      { id: 5, time: '11:00 - 11:45', subject: 'Art', teacher: 'Ms. Roberts', room: 'Art Room' },
-      { id: 6, time: '11:45 - 12:30', subject: 'Music', teacher: 'Mr. Martin', room: 'Music Room' },
-      { id: 7, time: '12:30 - 13:15', subject: 'Lunch', teacher: '-', room: '-' },
-      { id: 8, time: '13:15 - 14:00', subject: 'Physics', teacher: 'Dr. Lewis', room: 'Lab 2' },
-      { id: 9, time: '14:00 - 14:45', subject: 'Chemistry', teacher: 'Mrs. Clark', room: 'Lab 3' }
+      { id: 1, time: '08:00 - 08:45', subject: 'English', teacher: 'Ms. Davis', room: 'Room 102', class: '10-A' },
+      { id: 2, time: '08:45 - 09:30', subject: 'Mathematics', teacher: 'Mr. Johnson', room: 'Room 101', class: '10-A' },
+      { id: 3, time: '09:30 - 10:15', subject: 'Science', teacher: 'Mrs. Smith', room: 'Lab 1', class: '10-A' },
+      { id: 4, time: '10:15 - 11:00', subject: 'Break', teacher: '-', room: '-', class: '10-A' },
+      { id: 5, time: '11:00 - 11:45', subject: 'Art', teacher: 'Ms. Roberts', room: 'Art Room', class: '10-A' },
+      { id: 6, time: '11:45 - 12:30', subject: 'Music', teacher: 'Mr. Martin', room: 'Music Room', class: '10-A' },
+      { id: 7, time: '12:30 - 13:15', subject: 'Lunch', teacher: '-', room: '-', class: '10-A' },
+      { id: 8, time: '13:15 - 14:00', subject: 'Physics', teacher: 'Dr. Lewis', room: 'Lab 2', class: '10-A' },
+      { id: 9, time: '14:00 - 14:45', subject: 'Chemistry', teacher: 'Mrs. Clark', room: 'Lab 3', class: '10-A' }
     ],
     wednesday: [
-      { id: 1, time: '08:00 - 08:45', subject: 'Science', teacher: 'Mrs. Smith', room: 'Lab 1' },
-      { id: 2, time: '08:45 - 09:30', subject: 'English', teacher: 'Ms. Davis', room: 'Room 102' },
-      { id: 3, time: '09:30 - 10:15', subject: 'Mathematics', teacher: 'Mr. Johnson', room: 'Room 101' }
+      { id: 1, time: '08:00 - 08:45', subject: 'Science', teacher: 'Mrs. Smith', room: 'Lab 1', class: '10-A' },
+      { id: 2, time: '08:45 - 09:30', subject: 'English', teacher: 'Ms. Davis', room: 'Room 102', class: '10-A' },
+      { id: 3, time: '09:30 - 10:15', subject: 'Mathematics', teacher: 'Mr. Johnson', room: 'Room 101', class: '10-A' }
     ],
     thursday: [],
     friday: [],
@@ -71,6 +73,9 @@ const TimeTableManagement = () => {
   ];
   
   const currentTimetable = timetableData[selectedDay] || [];
+  const filteredTimetable = currentTimetable.filter(period => 
+    period.class === selectedClass || period.subject === 'Break' || period.subject === 'Lunch'
+  );
 
   const handleGenerateTimetable = (settings) => {
     setIsGenerating(true);
@@ -86,6 +91,8 @@ const TimeTableManagement = () => {
           ...prevData,
           ...timetable
         }));
+        
+        setConflicts(conflicts);
         
         if (conflicts.length === 0) {
           toast({
@@ -151,6 +158,78 @@ const TimeTableManagement = () => {
     }
   };
 
+  const handleManualAdjustment = (period = null) => {
+    setSelectedPeriod(period);
+    setShowManualAdjustment(true);
+  };
+
+  const handleSaveAdjustment = (adjustmentData) => {
+    // Check for conflicts
+    const { hasConflict, message } = checkForConflict(
+      selectedDay,
+      adjustmentData.period,
+      adjustmentData.teacherId,
+      adjustmentData.roomId,
+      selectedClass,
+      timetableData
+    );
+
+    if (hasConflict) {
+      toast({
+        title: "Conflict Detected",
+        description: message,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // If no conflict, proceed with update
+    const updatedTimetable = { ...timetableData };
+    let updatedPeriods = [...updatedTimetable[selectedDay]];
+
+    if (selectedPeriod) {
+      // Update existing period
+      const periodIndex = updatedPeriods.findIndex(p => p.id === selectedPeriod.id);
+      if (periodIndex !== -1) {
+        updatedPeriods[periodIndex] = {
+          ...updatedPeriods[periodIndex],
+          subject: adjustmentData.subject,
+          teacher: adjustmentData.teacher,
+          room: adjustmentData.room,
+          time: adjustmentData.time
+        };
+      }
+    } else {
+      // Add new period
+      const newId = Math.max(...updatedPeriods.map(p => typeof p.id === 'number' ? p.id : 0)) + 1;
+      updatedPeriods.push({
+        id: newId,
+        subject: adjustmentData.subject,
+        teacher: adjustmentData.teacher,
+        room: adjustmentData.room,
+        time: adjustmentData.time,
+        class: selectedClass
+      });
+
+      // Sort periods by time
+      updatedPeriods.sort((a, b) => {
+        if (a.subject === 'Break' || a.subject === 'Lunch') return 0;
+        if (b.subject === 'Break' || b.subject === 'Lunch') return 0;
+        return a.time.localeCompare(b.time);
+      });
+    }
+
+    updatedTimetable[selectedDay] = updatedPeriods;
+    setTimetableData(updatedTimetable);
+    setShowManualAdjustment(false);
+    setSelectedPeriod(null);
+
+    toast({
+      title: "Timetable Updated",
+      description: "The timetable has been adjusted successfully.",
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -181,14 +260,18 @@ const TimeTableManagement = () => {
             <Button 
               variant="outline"
               className="flex gap-2"
+              onClick={() => handleManualAdjustment()}
+            >
+              <Plus size={16} />
+              Add Period
+            </Button>
+            <Button 
+              variant="outline"
+              className="flex gap-2"
               onClick={() => setShowGenerator(true)}
             >
               <RefreshCw size={16} />
               Auto Generate
-            </Button>
-            <Button className="flex gap-2">
-              <Plus size={16} />
-              Add Schedule
             </Button>
           </div>
         </div>
@@ -209,6 +292,15 @@ const TimeTableManagement = () => {
           </Tabs>
         </div>
 
+        {conflicts.length > 0 && (
+          <Alert variant="warning" className="mb-4 bg-amber-50 border-amber-200">
+            <AlertCircle className="h-4 w-4 text-amber-500" />
+            <AlertDescription className="text-amber-800">
+              {conflicts.length} conflicts were resolved automatically. Some subjects may need manual scheduling.
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -221,9 +313,9 @@ const TimeTableManagement = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {currentTimetable.length > 0 ? (
-                currentTimetable.map((period) => (
-                  <TableRow key={period.id}>
+              {filteredTimetable.length > 0 ? (
+                filteredTimetable.map((period) => (
+                  <TableRow key={period.id} className={period.subject === 'Break' || period.subject === 'Lunch' ? 'bg-gray-50' : ''}>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Clock size={16} className="text-gray-500" />
@@ -247,30 +339,37 @@ const TimeTableManagement = () => {
                     </TableCell>
                     <TableCell>{period.room}</TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button 
-                          size="sm" 
-                          variant="ghost" 
-                          className="h-8 w-8 p-0"
-                          onClick={() => handleReportAbsence(period.id)}
-                          title="Report teacher absence"
-                        >
-                          <User size={16} />
-                        </Button>
-                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                          <Edit size={16} />
-                        </Button>
-                        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-red-500">
-                          <Trash2 size={16} />
-                        </Button>
-                      </div>
+                      {period.subject !== 'Break' && period.subject !== 'Lunch' && (
+                        <div className="flex justify-end gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-8 w-8 p-0"
+                            onClick={() => handleReportAbsence(period.id)}
+                            title="Report teacher absence"
+                          >
+                            <User size={16} />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-8 w-8 p-0"
+                            onClick={() => handleManualAdjustment(period)}
+                          >
+                            <Edit size={16} />
+                          </Button>
+                          <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-red-500">
+                            <Trash2 size={16} />
+                          </Button>
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
                   <TableCell colSpan={5} className="py-6 text-center text-gray-500">
-                    No schedule found for this day. Click "Auto Generate" to create one.
+                    No schedule found for this day. Click "Auto Generate" or "Add Period" to create one.
                   </TableCell>
                 </TableRow>
               )}
@@ -302,8 +401,129 @@ const TimeTableManagement = () => {
           onConfirm={handleSubstitution}
         />
       )}
+      
+      {/* Manual Adjustment Dialog */}
+      <Dialog open={showManualAdjustment} onOpenChange={setShowManualAdjustment}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedPeriod ? "Edit Period" : "Add New Period"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="time">Time</Label>
+              <Select defaultValue={selectedPeriod?.time || "08:00 - 08:45"}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select time" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="08:00 - 08:45">08:00 - 08:45</SelectItem>
+                  <SelectItem value="08:45 - 09:30">08:45 - 09:30</SelectItem>
+                  <SelectItem value="09:30 - 10:15">09:30 - 10:15</SelectItem>
+                  <SelectItem value="11:00 - 11:45">11:00 - 11:45</SelectItem>
+                  <SelectItem value="11:45 - 12:30">11:45 - 12:30</SelectItem>
+                  <SelectItem value="13:15 - 14:00">13:15 - 14:00</SelectItem>
+                  <SelectItem value="14:00 - 14:45">14:00 - 14:45</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="subject">Subject</Label>
+              <Select defaultValue={selectedPeriod?.subject || ""}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select subject" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Mathematics">Mathematics</SelectItem>
+                  <SelectItem value="Science">Science</SelectItem>
+                  <SelectItem value="English">English</SelectItem>
+                  <SelectItem value="History">History</SelectItem>
+                  <SelectItem value="Geography">Geography</SelectItem>
+                  <SelectItem value="Computer Science">Computer Science</SelectItem>
+                  <SelectItem value="Physical Education">Physical Education</SelectItem>
+                  <SelectItem value="Art">Art</SelectItem>
+                  <SelectItem value="Music">Music</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="teacher">Teacher</Label>
+              <Select defaultValue={selectedPeriod?.teacher || ""}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select teacher" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Mr. Johnson">Mr. Johnson (Mathematics)</SelectItem>
+                  <SelectItem value="Mrs. Smith">Mrs. Smith (Science)</SelectItem>
+                  <SelectItem value="Ms. Davis">Ms. Davis (English)</SelectItem>
+                  <SelectItem value="Mr. Wilson">Mr. Wilson (History)</SelectItem>
+                  <SelectItem value="Mrs. Taylor">Mrs. Taylor (Geography)</SelectItem>
+                  <SelectItem value="Mr. Brown">Mr. Brown (Computer Science)</SelectItem>
+                  <SelectItem value="Mr. Thomas">Mr. Thomas (Physical Education)</SelectItem>
+                  <SelectItem value="Ms. Roberts">Ms. Roberts (Art)</SelectItem>
+                  <SelectItem value="Mr. Martin">Mr. Martin (Music)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="room">Room</Label>
+              <Select defaultValue={selectedPeriod?.room || ""}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select room" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Room 101">Room 101</SelectItem>
+                  <SelectItem value="Room 102">Room 102</SelectItem>
+                  <SelectItem value="Room 103">Room 103</SelectItem>
+                  <SelectItem value="Room 104">Room 104</SelectItem>
+                  <SelectItem value="Lab 1">Lab 1</SelectItem>
+                  <SelectItem value="Lab 2">Lab 2</SelectItem>
+                  <SelectItem value="Lab 3">Lab 3</SelectItem>
+                  <SelectItem value="Computer Lab">Computer Lab</SelectItem>
+                  <SelectItem value="Art Room">Art Room</SelectItem>
+                  <SelectItem value="Music Room">Music Room</SelectItem>
+                  <SelectItem value="Playground">Playground</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <Alert variant="warning" className="bg-blue-50 border-blue-200">
+              <AlertCircle className="h-4 w-4 text-blue-500" />
+              <AlertDescription className="text-blue-800 text-sm">
+                The system will check for conflicts to prevent scheduling the same teacher or room at the same time.
+              </AlertDescription>
+            </Alert>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowManualAdjustment(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => handleSaveAdjustment({
+              subject: "Mathematics",
+              teacher: "Mr. Johnson",
+              room: "Room 101",
+              time: "08:00 - 08:45",
+              period: 0
+            })}>
+              {selectedPeriod ? "Update" : "Add"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
+
+// Add the Label component since we're using it in this file
+const Label = ({ children, htmlFor }) => (
+  <label htmlFor={htmlFor} className="text-sm font-medium text-gray-700">
+    {children}
+  </label>
+);
 
 export default TimeTableManagement;

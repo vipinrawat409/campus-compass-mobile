@@ -1,0 +1,320 @@
+
+import React, { useState } from 'react';
+import { Calendar, FileText, Clock, Plus, AlignLeft } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/components/ui/use-toast";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+const leaveTypes = [
+  { id: 'sick', label: 'Sick Leave' },
+  { id: 'casual', label: 'Casual Leave' },
+  { id: 'personal', label: 'Personal Leave' },
+  { id: 'family', label: 'Family Care' },
+  { id: 'bereavement', label: 'Bereavement Leave' },
+  { id: 'vacation', label: 'Vacation' },
+  { id: 'unpaid', label: 'Unpaid Leave' }
+];
+
+const StaffLeave = () => {
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState('pending');
+  const [showNewLeaveForm, setShowNewLeaveForm] = useState(false);
+  const [leaveData, setLeaveData] = useState({
+    fromDate: '',
+    toDate: '',
+    type: '',
+    reason: '',
+    document: null
+  });
+  
+  const [leaveHistory] = useState([
+    {
+      id: 1,
+      type: 'Sick Leave',
+      fromDate: '2025-04-10',
+      toDate: '2025-04-12',
+      days: 3,
+      reason: 'Medical appointment and recovery',
+      status: 'approved',
+      appliedOn: '2025-04-05',
+      approvedBy: 'John Wilson',
+      approvedOn: '2025-04-06'
+    },
+    {
+      id: 2,
+      type: 'Personal Leave',
+      fromDate: '2025-03-21',
+      toDate: '2025-03-21',
+      days: 1,
+      reason: 'Family event',
+      status: 'approved',
+      appliedOn: '2025-03-18',
+      approvedBy: 'John Wilson',
+      approvedOn: '2025-03-19'
+    },
+    {
+      id: 3,
+      type: 'Casual Leave',
+      fromDate: '2025-05-15',
+      toDate: '2025-05-16',
+      days: 2,
+      reason: 'Personal work',
+      status: 'pending',
+      appliedOn: '2025-05-05'
+    }
+  ]);
+  
+  const handleSubmitLeave = (e) => {
+    e.preventDefault();
+    
+    // Validate form
+    if (!leaveData.fromDate || !leaveData.toDate || !leaveData.type || !leaveData.reason) {
+      toast({
+        title: "Error",
+        description: "Please fill all required fields",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Mock API call to submit leave
+    toast({
+      title: "Leave application submitted",
+      description: "Your leave application has been submitted for approval"
+    });
+    
+    // Reset form and close modal
+    setLeaveData({
+      fromDate: '',
+      toDate: '',
+      type: '',
+      reason: '',
+      document: null
+    });
+    setShowNewLeaveForm(false);
+  };
+  
+  const handleInputChange = (field, value) => {
+    setLeaveData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Filter leaves by status
+  const filteredLeaves = leaveHistory.filter(leave => {
+    if (activeTab === 'all') return true;
+    return leave.status === activeTab;
+  });
+  
+  // Calculate leave balance
+  const leaveBalance = {
+    sick: 10,
+    casual: 7,
+    personal: 5,
+    remaining: 22
+  };
+  
+  // Function to get status badge color
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'approved':
+        return 'bg-green-100 text-green-800';
+      case 'rejected':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="page-title">Staff Leave Management</h1>
+        <p className="text-gray-500">Apply for and track your leave applications</p>
+      </div>
+      
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <Card className="p-4 bg-soft-green">
+          <p className="text-sm text-gray-600">Total Leave Balance</p>
+          <p className="text-2xl font-semibold mt-1">{leaveBalance.remaining} days</p>
+        </Card>
+        
+        <Card className="p-4 bg-soft-blue">
+          <p className="text-sm text-gray-600">Sick Leave</p>
+          <p className="text-2xl font-semibold mt-1">{leaveBalance.sick} days</p>
+        </Card>
+        
+        <Card className="p-4 bg-soft-purple">
+          <p className="text-sm text-gray-600">Casual Leave</p>
+          <p className="text-2xl font-semibold mt-1">{leaveBalance.casual} days</p>
+        </Card>
+        
+        <Card className="p-4 bg-soft-yellow">
+          <p className="text-sm text-gray-600">Personal Leave</p>
+          <p className="text-2xl font-semibold mt-1">{leaveBalance.personal} days</p>
+        </Card>
+      </div>
+      
+      <div className="card-wrapper">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <h2 className="text-lg font-semibold">Leave Applications</h2>
+          <Button className="flex gap-2" onClick={() => setShowNewLeaveForm(true)}>
+            <Plus size={16} />
+            Apply for Leave
+          </Button>
+        </div>
+        
+        <Tabs defaultValue="pending" value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="pending">Pending</TabsTrigger>
+            <TabsTrigger value="approved">Approved</TabsTrigger>
+            <TabsTrigger value="rejected">Rejected</TabsTrigger>
+            <TabsTrigger value="all">All</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value={activeTab}>
+            <div className="overflow-x-auto mt-4">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Type</TableHead>
+                    <TableHead>From</TableHead>
+                    <TableHead>To</TableHead>
+                    <TableHead>Days</TableHead>
+                    <TableHead>Applied On</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredLeaves.length > 0 ? (
+                    filteredLeaves.map((leave) => (
+                      <TableRow key={leave.id}>
+                        <TableCell>{leave.type}</TableCell>
+                        <TableCell>{new Date(leave.fromDate).toLocaleDateString()}</TableCell>
+                        <TableCell>{new Date(leave.toDate).toLocaleDateString()}</TableCell>
+                        <TableCell>{leave.days}</TableCell>
+                        <TableCell>{new Date(leave.appliedOn).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 text-xs rounded-full ${getStatusBadge(leave.status)}`}>
+                            {leave.status.charAt(0).toUpperCase() + leave.status.slice(1)}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-4">
+                        No leave applications found.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+      
+      {/* New Leave Application Dialog */}
+      <Dialog open={showNewLeaveForm} onOpenChange={setShowNewLeaveForm}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Apply for Leave</DialogTitle>
+          </DialogHeader>
+          
+          <form onSubmit={handleSubmitLeave} className="space-y-4 py-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="fromDate">From Date</Label>
+                <Input
+                  id="fromDate"
+                  type="date"
+                  value={leaveData.fromDate}
+                  onChange={(e) => handleInputChange('fromDate', e.target.value)}
+                  required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="toDate">To Date</Label>
+                <Input
+                  id="toDate"
+                  type="date"
+                  value={leaveData.toDate}
+                  onChange={(e) => handleInputChange('toDate', e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="leaveType">Leave Type</Label>
+              <Select
+                value={leaveData.type}
+                onValueChange={(value) => handleInputChange('type', value)}
+                required
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select leave type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {leaveTypes.map((type) => (
+                    <SelectItem key={type.id} value={type.id}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="reason">Reason for Leave</Label>
+              <Textarea
+                id="reason"
+                value={leaveData.reason}
+                onChange={(e) => handleInputChange('reason', e.target.value)}
+                placeholder="Please provide details for your leave request"
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="document">Supporting Document (Optional)</Label>
+              <Input
+                id="document"
+                type="file"
+                onChange={(e) => handleInputChange('document', e.target.files[0])}
+              />
+              <p className="text-xs text-gray-500">
+                Upload medical certificate, travel documents, or other relevant files
+              </p>
+            </div>
+            
+            <DialogFooter className="pt-4">
+              <Button variant="outline" type="button" onClick={() => setShowNewLeaveForm(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">Submit Leave Request</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default StaffLeave;

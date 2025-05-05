@@ -1,9 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Clock } from 'lucide-react';
+import { Calendar, Clock, User, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { findSubstituteTeachers } from "@/utils/timetableUtils";
 
 interface Period {
   id: number;
@@ -11,6 +14,7 @@ interface Period {
   subject: string;
   teacher: string;
   room: string;
+  class?: string;
 }
 
 interface SubstitutionModalProps {
@@ -27,14 +31,30 @@ const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
   onConfirm,
 }) => {
   const [selectedTeacher, setSelectedTeacher] = useState('');
+  const [availableTeachers, setAvailableTeachers] = useState([]);
+  const [loading, setLoading] = useState(true);
   
-  // Mock available teachers for this subject
-  const availableTeachers = [
-    { id: 1, name: 'Mr. Adams', subject: period?.subject },
-    { id: 2, name: 'Mrs. Wilson', subject: period?.subject },
-    { id: 3, name: 'Ms. Peterson', subject: period?.subject },
-    { id: 4, name: 'Mr. Rodriguez', subject: period?.subject },
-  ];
+  useEffect(() => {
+    if (period) {
+      setLoading(true);
+      // Fetch potential substitutes from our utility
+      const day = new Date().toLocaleLowerCase().slice(0, 3);
+      const substitutes = findSubstituteTeachers(
+        period.teacher, 
+        period.subject,
+        period.time,
+        day
+      );
+      
+      setAvailableTeachers(substitutes.map(teacher => ({
+        id: teacher.id,
+        name: teacher.name,
+        subject: period?.subject,
+        availability: 'Available'
+      })));
+      setLoading(false);
+    }
+  }, [period]);
   
   const handleConfirm = () => {
     if (selectedTeacher) {
@@ -63,6 +83,7 @@ const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                 <span>{period.time}</span>
               </div>
               <div className="flex items-center gap-2">
+                <User size={14} />
                 <span className="font-medium">Teacher:</span>
                 <span>{period.teacher}</span>
               </div>
@@ -70,6 +91,12 @@ const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                 <span className="font-medium">Room:</span>
                 <span>{period.room}</span>
               </div>
+              {period.class && (
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">Class:</span>
+                  <span>{period.class}</span>
+                </div>
+              )}
             </div>
           </div>
           
@@ -78,21 +105,37 @@ const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
               <label className="block text-sm font-medium mb-1">
                 Select Substitute Teacher
               </label>
-              <Select
-                value={selectedTeacher}
-                onValueChange={setSelectedTeacher}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Choose a substitute teacher" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableTeachers.map((teacher) => (
-                    <SelectItem key={teacher.id} value={teacher.name}>
-                      {teacher.name} ({teacher.subject})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {loading ? (
+                <div className="text-sm text-gray-500">Loading available teachers...</div>
+              ) : availableTeachers.length > 0 ? (
+                <Select
+                  value={selectedTeacher}
+                  onValueChange={setSelectedTeacher}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a substitute teacher" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableTeachers.map((teacher) => (
+                      <SelectItem key={teacher.id} value={teacher.name}>
+                        <div className="flex items-center justify-between w-full">
+                          <span>{teacher.name} ({teacher.subject})</span>
+                          <Badge variant="outline" className="ml-2 bg-green-50 text-green-700 border-green-200">
+                            {teacher.availability}
+                          </Badge>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Alert variant="destructive" className="mt-2 bg-red-50 border-red-200">
+                  <AlertCircle className="h-4 w-4 text-red-500" />
+                  <AlertDescription className="text-red-800">
+                    No qualified substitute teachers are available at this time.
+                  </AlertDescription>
+                </Alert>
+              )}
             </div>
             
             <div className="bg-yellow-50 border-yellow-100 border rounded-md p-3 text-sm text-yellow-800">

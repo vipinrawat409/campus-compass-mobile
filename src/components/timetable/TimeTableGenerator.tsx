@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface TimeTableGeneratorProps {
   onGenerate: (settings: any) => void;
@@ -28,6 +30,10 @@ const TimeTableGenerator: React.FC<TimeTableGeneratorProps> = ({
     optimizeRooms: true,
     balanceWorkload: true,
     considerPreferences: false,
+    allowManualAdjustments: true,
+    detectTeacherConflicts: true,
+    detectRoomConflicts: true,
+    enableSubstitution: true
   });
   
   const classes = ['7-A', '7-B', '8-A', '8-B', '9-A', '9-B', '10-A', '10-B'];
@@ -161,6 +167,34 @@ const TimeTableGenerator: React.FC<TimeTableGeneratorProps> = ({
               Distributes teaching load evenly among teachers
             </p>
           </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="detectTeacherConflicts">Detect teacher conflicts in manual adjustments</Label>
+              <Switch
+                id="detectTeacherConflicts"
+                checked={settings.detectTeacherConflicts}
+                onCheckedChange={(checked) => handleChange('detectTeacherConflicts', checked)}
+              />
+            </div>
+            <p className="text-sm text-gray-500">
+              Prevents assigning same teacher to multiple classes simultaneously
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="enableSubstitution">Enable teacher substitution system</Label>
+              <Switch
+                id="enableSubstitution"
+                checked={settings.enableSubstitution}
+                onCheckedChange={(checked) => handleChange('enableSubstitution', checked)}
+              />
+            </div>
+            <p className="text-sm text-gray-500">
+              Allows managing teacher absences with substitute arrangements
+            </p>
+          </div>
         </div>
       )}
       
@@ -198,8 +232,28 @@ const TimeTableGenerator: React.FC<TimeTableGeneratorProps> = ({
                   </SelectContent>
                 </Select>
               </Card>
+
+              <Card className="p-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Manual adjustment</p>
+                    <p className="text-sm text-gray-500">Allow manual timetable adjustments</p>
+                  </div>
+                  <Switch
+                    checked={settings.allowManualAdjustments}
+                    onCheckedChange={(checked) => handleChange('allowManualAdjustments', checked)}
+                  />
+                </div>
+              </Card>
             </div>
           </div>
+          
+          <Alert variant="warning" className="bg-amber-50 text-amber-800 border-amber-200">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Manual adjustments will be checked for teacher conflicts to prevent scheduling the same teacher in multiple classes simultaneously.
+            </AlertDescription>
+          </Alert>
         </div>
       )}
       
