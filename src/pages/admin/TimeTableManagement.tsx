@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, Plus, Edit, Trash2, RefreshCw, Bell, User, AlertCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -293,7 +292,7 @@ const TimeTableManagement = () => {
         </div>
 
         {conflicts.length > 0 && (
-          <Alert variant="warning" className="mb-4 bg-amber-50 border-amber-200">
+          <Alert variant="default" className="mb-4 bg-amber-50 border-amber-200">
             <AlertCircle className="h-4 w-4 text-amber-500" />
             <AlertDescription className="text-amber-800">
               {conflicts.length} conflicts were resolved automatically. Some subjects may need manual scheduling.
@@ -491,7 +490,7 @@ const TimeTableManagement = () => {
               </Select>
             </div>
             
-            <Alert variant="warning" className="bg-blue-50 border-blue-200">
+            <Alert variant="default" className="bg-blue-50 border-blue-200">
               <AlertCircle className="h-4 w-4 text-blue-500" />
               <AlertDescription className="text-blue-800 text-sm">
                 The system will check for conflicts to prevent scheduling the same teacher or room at the same time.

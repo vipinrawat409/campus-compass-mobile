@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -38,7 +37,7 @@ const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
     if (period) {
       setLoading(true);
       // Fetch potential substitutes from our utility
-      const day = new Date().toLocaleLowerCase().slice(0, 3);
+      const day = new Date().toLocaleString('en-US', { weekday: 'short' }).toLowerCase(); // Fixed: Convert date to day name correctly
       const substitutes = findSubstituteTeachers(
         period.teacher, 
         period.subject,

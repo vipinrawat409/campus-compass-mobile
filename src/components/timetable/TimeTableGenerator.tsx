@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -248,7 +247,7 @@ const TimeTableGenerator: React.FC<TimeTableGeneratorProps> = ({
             </div>
           </div>
           
-          <Alert variant="warning" className="bg-amber-50 text-amber-800 border-amber-200">
+          <Alert variant="default" className="bg-amber-50 text-amber-800 border-amber-200">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
               Manual adjustments will be checked for teacher conflicts to prevent scheduling the same teacher in multiple classes simultaneously.
