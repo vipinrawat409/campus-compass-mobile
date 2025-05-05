@@ -118,6 +118,18 @@ const Sidebar = () => {
       roles: ['student', 'parent']
     },
     {
+      title: "Staff Leave",
+      icon: <Clock size={18} />,
+      path: "/dashboard/staff-leave",
+      roles: ['staff']
+    },
+    {
+      title: "Staff Salary",
+      icon: <DollarSign size={18} />,
+      path: "/dashboard/staff-salary",
+      roles: ['staff']
+    },
+    {
       title: "Marks",
       icon: <FileText size={18} />,
       path: "/dashboard/marks",
@@ -139,7 +151,7 @@ const Sidebar = () => {
       title: "Notice",
       icon: <Bell size={18} />,
       path: "/dashboard/notices-view",
-      roles: ['student', 'parent']
+      roles: ['student', 'parent', 'staff']
     },
     {
       title: "Leave",
