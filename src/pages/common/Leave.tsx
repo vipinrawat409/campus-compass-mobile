@@ -283,9 +283,9 @@ const TeacherLeave = () => {
         </Tabs>
       </div>
       
-      {/* New Leave Application Dialog */}
+      {/* New Leave Application Dialog - Fixed with max-height and overflow-y-auto */}
       <Dialog open={showNewLeaveForm} onOpenChange={setShowNewLeaveForm}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Apply for Leave</DialogTitle>
           </DialogHeader>

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Table,
   TableBody,
@@ -20,6 +21,7 @@ const StaffSalary = () => {
   const [selectedMonth, setSelectedMonth] = useState('May 2025');
   const [showSlipDialog, setShowSlipDialog] = useState(false);
   const [selectedSlip, setSelectedSlip] = useState(null);
+  const [activeTab, setActiveTab] = useState('payslips');
   
   const months = ['May 2025', 'April 2025', 'March 2025', 'February 2025', 'January 2025', 'December 2024'];
   
@@ -57,6 +59,33 @@ const StaffSalary = () => {
       status: 'Paid',
       paidOn: '2025-03-01'
     }
+  ];
+
+  // Additional salary information
+  const salaryBreakup = {
+    basic: 35000,
+    hra: 10000,
+    specialAllowance: 3000,
+    conveyanceAllowance: 1000,
+    medicalAllowance: 1000,
+    providentFund: 3000,
+    professionalTax: 200,
+    incomeTax: 1500,
+    otherDeductions: 300
+  };
+
+  // Tax details for the current financial year
+  const taxDetails = [
+    { description: 'Gross Salary (YTD)', amount: 540000 },
+    { description: 'Standard Deduction', amount: 50000 },
+    { description: 'Professional Tax', amount: 2400 },
+    { description: 'House Rent Allowance', amount: 120000 },
+    { description: '80C Investments', amount: 150000 },
+    { description: '80D Medical Insurance', amount: 25000 },
+    { description: 'Taxable Income', amount: 192600 },
+    { description: 'Tax Payable', amount: 18000 },
+    { description: 'Tax Already Paid', amount: 16500 },
+    { description: 'Remaining Tax', amount: 1500 }
   ];
   
   const handleViewSlip = (slip) => {
@@ -126,94 +155,215 @@ const StaffSalary = () => {
         </Card>
       </div>
       
-      <div className="card-wrapper">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <div className="flex items-center gap-2">
-            <Calendar size={18} className="text-primary" />
-            <span className="font-medium">Month:</span>
-            <Select 
-              value={selectedMonth}
-              onValueChange={setSelectedMonth}
-            >
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Select month" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Months</SelectItem>
-                {months.map((month) => (
-                  <SelectItem key={month} value={month}>{month}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Month</TableHead>
-                <TableHead className="text-right">Basic</TableHead>
-                <TableHead className="text-right">HRA</TableHead>
-                <TableHead className="text-right">Allowances</TableHead>
-                <TableHead className="text-right">Deductions</TableHead>
-                <TableHead className="text-right">Net Salary</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredHistory.length > 0 ? (
-                filteredHistory.map((slip) => (
-                  <TableRow key={slip.id}>
-                    <TableCell>{slip.month}</TableCell>
-                    <TableCell className="text-right">₹{slip.basic.toLocaleString()}</TableCell>
-                    <TableCell className="text-right">₹{slip.hra.toLocaleString()}</TableCell>
-                    <TableCell className="text-right">₹{slip.allowances.toLocaleString()}</TableCell>
-                    <TableCell className="text-right">₹{slip.deductions.toLocaleString()}</TableCell>
-                    <TableCell className="text-right font-medium">₹{slip.netSalary.toLocaleString()}</TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 text-xs rounded-full ${getStatusBadge(slip.status)}`}>
-                        {slip.status}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button 
-                          size="sm" 
-                          variant="ghost"
-                          onClick={() => handleViewSlip(slip)}
-                        >
-                          View
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          className="flex gap-1 items-center"
-                          onClick={() => handleDownloadSlip(slip)}
-                        >
-                          <Download size={14} />
-                          PDF
-                        </Button>
-                      </div>
-                    </TableCell>
+      <div className="card-wrapper p-6 border rounded-lg">
+        <Tabs defaultValue="payslips" value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="payslips">Salary Slips</TabsTrigger>
+            <TabsTrigger value="breakdown">Salary Breakdown</TabsTrigger>
+            <TabsTrigger value="tax">Tax Information</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="payslips">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 my-4">
+              <div className="flex items-center gap-2">
+                <Calendar size={18} className="text-primary" />
+                <span className="font-medium">Month:</span>
+                <Select 
+                  value={selectedMonth}
+                  onValueChange={setSelectedMonth}
+                >
+                  <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="Select month" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Months</SelectItem>
+                    {months.map((month) => (
+                      <SelectItem key={month} value={month}>{month}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Month</TableHead>
+                    <TableHead className="text-right">Basic</TableHead>
+                    <TableHead className="text-right">HRA</TableHead>
+                    <TableHead className="text-right">Allowances</TableHead>
+                    <TableHead className="text-right">Deductions</TableHead>
+                    <TableHead className="text-right">Net Salary</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-4">
-                    No salary records found for the selected month.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                </TableHeader>
+                <TableBody>
+                  {filteredHistory.length > 0 ? (
+                    filteredHistory.map((slip) => (
+                      <TableRow key={slip.id}>
+                        <TableCell>{slip.month}</TableCell>
+                        <TableCell className="text-right">₹{slip.basic.toLocaleString()}</TableCell>
+                        <TableCell className="text-right">₹{slip.hra.toLocaleString()}</TableCell>
+                        <TableCell className="text-right">₹{slip.allowances.toLocaleString()}</TableCell>
+                        <TableCell className="text-right">₹{slip.deductions.toLocaleString()}</TableCell>
+                        <TableCell className="text-right font-medium">₹{slip.netSalary.toLocaleString()}</TableCell>
+                        <TableCell>
+                          <span className={`px-2 py-1 text-xs rounded-full ${getStatusBadge(slip.status)}`}>
+                            {slip.status}
+                          </span>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button 
+                              size="sm" 
+                              variant="ghost"
+                              onClick={() => handleViewSlip(slip)}
+                            >
+                              View
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="flex gap-1 items-center"
+                              onClick={() => handleDownloadSlip(slip)}
+                            >
+                              <Download size={14} />
+                              PDF
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-4">
+                        No salary records found for the selected month.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="breakdown">
+            <div className="p-4 my-4">
+              <h3 className="text-lg font-medium mb-4">Current Salary Structure</h3>
+              
+              <div className="grid md:grid-cols-2 gap-8">
+                <div>
+                  <h4 className="font-medium text-primary mb-2">Earnings</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between border-b pb-2">
+                      <span>Basic Salary</span>
+                      <span className="font-medium">₹{salaryBreakup.basic.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between border-b pb-2">
+                      <span>House Rent Allowance</span>
+                      <span className="font-medium">₹{salaryBreakup.hra.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between border-b pb-2">
+                      <span>Special Allowance</span>
+                      <span className="font-medium">₹{salaryBreakup.specialAllowance.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between border-b pb-2">
+                      <span>Conveyance Allowance</span>
+                      <span className="font-medium">₹{salaryBreakup.conveyanceAllowance.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between border-b pb-2">
+                      <span>Medical Allowance</span>
+                      <span className="font-medium">₹{salaryBreakup.medicalAllowance.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between pt-2 font-medium">
+                      <span>Gross Earnings</span>
+                      <span>₹{(salaryBreakup.basic + salaryBreakup.hra + salaryBreakup.specialAllowance + 
+                              salaryBreakup.conveyanceAllowance + salaryBreakup.medicalAllowance).toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h4 className="font-medium text-red-600 mb-2">Deductions</h4>
+                  <div className="space-y-2">
+                    <div className="flex justify-between border-b pb-2">
+                      <span>Provident Fund</span>
+                      <span className="font-medium">₹{salaryBreakup.providentFund.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between border-b pb-2">
+                      <span>Professional Tax</span>
+                      <span className="font-medium">₹{salaryBreakup.professionalTax.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between border-b pb-2">
+                      <span>Income Tax</span>
+                      <span className="font-medium">₹{salaryBreakup.incomeTax.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between border-b pb-2">
+                      <span>Other Deductions</span>
+                      <span className="font-medium">₹{salaryBreakup.otherDeductions.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between pt-2 font-medium">
+                      <span>Total Deductions</span>
+                      <span>₹{(salaryBreakup.providentFund + salaryBreakup.professionalTax + 
+                              salaryBreakup.incomeTax + salaryBreakup.otherDeductions).toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-6 p-4 bg-gray-50 rounded-md">
+                <div className="flex justify-between font-medium text-lg">
+                  <span>Net Salary</span>
+                  <span>₹{(salaryBreakup.basic + salaryBreakup.hra + salaryBreakup.specialAllowance + 
+                          salaryBreakup.conveyanceAllowance + salaryBreakup.medicalAllowance - 
+                          (salaryBreakup.providentFund + salaryBreakup.professionalTax + 
+                          salaryBreakup.incomeTax + salaryBreakup.otherDeductions)).toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="tax">
+            <div className="p-4 my-4">
+              <h3 className="text-lg font-medium mb-4">FY 2025-26 Tax Information</h3>
+              
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Description</TableHead>
+                      <TableHead className="text-right">Amount (₹)</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {taxDetails.map((item, index) => (
+                      <TableRow key={index} className={index === 6 || index === 7 ? "font-medium bg-gray-50" : ""}>
+                        <TableCell>{item.description}</TableCell>
+                        <TableCell className="text-right">{item.amount.toLocaleString()}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              
+              <div className="mt-4">
+                <Button variant="outline" className="flex gap-2" onClick={() => toast({
+                  title: "Downloading Tax Statement",
+                  description: "Your annual tax statement is being downloaded"
+                })}>
+                  <Download size={16} />
+                  Download Form 16
+                </Button>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
       
       {/* Salary Slip Dialog */}
       <Dialog open={showSlipDialog} onOpenChange={setShowSlipDialog}>
-        <DialogContent className="sm:max-w-[650px]">
+        <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Salary Slip - {selectedSlip?.month}</DialogTitle>
           </DialogHeader>

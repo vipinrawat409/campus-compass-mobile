@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Calendar, FileText, Clock, Plus, AlignLeft } from 'lucide-react';
+import { Calendar, FileText, Clock, Plus } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -91,6 +91,18 @@ const StaffLeave = () => {
       return;
     }
     
+    // Calculate number of days
+    const from = new Date(leaveData.fromDate);
+    const to = new Date(leaveData.toDate);
+    if (from > to) {
+      toast({
+        title: "Error",
+        description: "From date cannot be after to date",
+        variant: "destructive" 
+      });
+      return;
+    }
+    
     // Mock API call to submit leave
     toast({
       title: "Leave application submitted",
@@ -169,7 +181,7 @@ const StaffLeave = () => {
         </Card>
       </div>
       
-      <div className="card-wrapper">
+      <div className="card-wrapper p-6 border rounded-lg">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <h2 className="text-lg font-semibold">Leave Applications</h2>
           <Button className="flex gap-2" onClick={() => setShowNewLeaveForm(true)}>
@@ -197,6 +209,7 @@ const StaffLeave = () => {
                     <TableHead>Days</TableHead>
                     <TableHead>Applied On</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -213,11 +226,14 @@ const StaffLeave = () => {
                             {leave.status.charAt(0).toUpperCase() + leave.status.slice(1)}
                           </span>
                         </TableCell>
+                        <TableCell>
+                          <Button size="sm" variant="outline">View Details</Button>
+                        </TableCell>
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-4">
+                      <TableCell colSpan={7} className="text-center py-4">
                         No leave applications found.
                       </TableCell>
                     </TableRow>
@@ -229,9 +245,9 @@ const StaffLeave = () => {
         </Tabs>
       </div>
       
-      {/* New Leave Application Dialog */}
+      {/* New Leave Application Dialog - Fixed with max-height and overflow-y-auto */}
       <Dialog open={showNewLeaveForm} onOpenChange={setShowNewLeaveForm}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Apply for Leave</DialogTitle>
           </DialogHeader>
@@ -240,24 +256,32 @@ const StaffLeave = () => {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="fromDate">From Date</Label>
-                <Input
-                  id="fromDate"
-                  type="date"
-                  value={leaveData.fromDate}
-                  onChange={(e) => handleInputChange('fromDate', e.target.value)}
-                  required
-                />
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                  <Input
+                    id="fromDate"
+                    type="date"
+                    value={leaveData.fromDate}
+                    onChange={(e) => handleInputChange('fromDate', e.target.value)}
+                    required
+                    className="pl-10"
+                  />
+                </div>
               </div>
               
               <div className="space-y-2">
                 <Label htmlFor="toDate">To Date</Label>
-                <Input
-                  id="toDate"
-                  type="date"
-                  value={leaveData.toDate}
-                  onChange={(e) => handleInputChange('toDate', e.target.value)}
-                  required
-                />
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                  <Input
+                    id="toDate"
+                    type="date"
+                    value={leaveData.toDate}
+                    onChange={(e) => handleInputChange('toDate', e.target.value)}
+                    required
+                    className="pl-10"
+                  />
+                </div>
               </div>
             </div>
             
@@ -283,13 +307,17 @@ const StaffLeave = () => {
             
             <div className="space-y-2">
               <Label htmlFor="reason">Reason for Leave</Label>
-              <Textarea
-                id="reason"
-                value={leaveData.reason}
-                onChange={(e) => handleInputChange('reason', e.target.value)}
-                placeholder="Please provide details for your leave request"
-                required
-              />
+              <div className="relative">
+                <FileText className="absolute left-3 top-4 h-4 w-4 text-gray-500" />
+                <Textarea
+                  id="reason"
+                  value={leaveData.reason}
+                  onChange={(e) => handleInputChange('reason', e.target.value)}
+                  placeholder="Please provide details for your leave request"
+                  required
+                  className="pl-10"
+                />
+              </div>
             </div>
             
             <div className="space-y-2">
@@ -302,6 +330,15 @@ const StaffLeave = () => {
               <p className="text-xs text-gray-500">
                 Upload medical certificate, travel documents, or other relevant files
               </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="workHandover">Work Handover Details</Label>
+              <Textarea
+                id="workHandover" 
+                placeholder="Mention any pending work or responsibilities that need attention during your absence"
+                className="min-h-20"
+              />
             </div>
             
             <DialogFooter className="pt-4">
