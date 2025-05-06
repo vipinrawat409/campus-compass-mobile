@@ -4,13 +4,20 @@ import { FileCheck, Search, Filter, Calendar, User, Check, X } from 'lucide-reac
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from "@/components/ui/use-toast";
 
 const LeaveApproval = () => {
+  const { toast } = useToast();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('pending');
   const [searchTerm, setSearchTerm] = useState('');
   
-  // Mock leave applications data
-  const leaveData = [
+  // Different mock data based on user role
+  const isTeacher = user?.role === 'teacher';
+  
+  // Mock leave applications data for admin
+  const adminLeaveData = [
     { 
       id: 1, 
       name: 'John Miller', 
@@ -78,6 +85,73 @@ const LeaveApproval = () => {
     }
   ];
   
+  // Mock leave applications data for teacher (only student leaves)
+  const teacherLeaveData = [
+    { 
+      id: 1, 
+      name: 'Emma Thompson', 
+      role: 'Student',
+      class: '8-A',
+      rollNo: '8A01',
+      leaveType: 'Medical',
+      fromDate: '2025-05-22',
+      toDate: '2025-05-24',
+      days: 3,
+      reason: 'Fever and cold',
+      status: 'pending',
+      appliedOn: '2025-05-18',
+      appliedBy: 'Parent'
+    },
+    { 
+      id: 2, 
+      name: 'James Wilson', 
+      role: 'Student',
+      class: '8-A',
+      rollNo: '8A02',
+      leaveType: 'Family Event',
+      fromDate: '2025-05-20',
+      toDate: '2025-05-22',
+      days: 3,
+      reason: 'Family wedding',
+      status: 'pending',
+      appliedOn: '2025-05-17',
+      appliedBy: 'Parent'
+    },
+    { 
+      id: 3, 
+      name: 'Benjamin Anderson', 
+      role: 'Student',
+      class: '8-A',
+      rollNo: '8A06',
+      leaveType: 'Sports Event',
+      fromDate: '2025-05-25',
+      toDate: '2025-05-25',
+      days: 1,
+      reason: 'Inter-school competition',
+      status: 'approved',
+      appliedOn: '2025-05-16',
+      approvedOn: '2025-05-16'
+    },
+    { 
+      id: 4, 
+      name: 'Sophia Martinez', 
+      role: 'Student',
+      class: '8-A',
+      rollNo: '8A05',
+      leaveType: 'Medical',
+      fromDate: '2025-05-15',
+      toDate: '2025-05-17',
+      days: 3,
+      reason: 'Doctor appointment and recovery',
+      status: 'rejected',
+      appliedOn: '2025-05-14',
+      rejectedOn: '2025-05-15',
+      rejectionReason: 'Important test scheduled'
+    }
+  ];
+  
+  const leaveData = isTeacher ? teacherLeaveData : adminLeaveData;
+
   // Filter leave applications based on search term and active tab
   const filteredLeaves = leaveData.filter(leave => 
     (activeTab === 'all' || leave.status === activeTab) &&
@@ -86,9 +160,15 @@ const LeaveApproval = () => {
       leave.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (leave.subject && leave.subject.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (leave.department && leave.department.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (leave.class && leave.class.toLowerCase().includes(searchTerm.toLowerCase())) ||
       leave.leaveType.toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
+  
+  // Stats calculation
+  const pendingCount = leaveData.filter(leave => leave.status === 'pending').length;
+  const approvedCount = leaveData.filter(leave => leave.status === 'approved').length;
+  const rejectedCount = leaveData.filter(leave => leave.status === 'rejected').length;
 
   // Function to get status badge color
   const getStatusBadge = (status: string) => {
@@ -103,12 +183,26 @@ const LeaveApproval = () => {
         return 'bg-gray-100 text-gray-800';
     }
   };
+  
+  // Handle leave approval/rejection
+  const handleLeaveAction = (leaveId: number, action: 'approve' | 'reject') => {
+    toast({
+      title: action === 'approve' ? "Leave Approved" : "Leave Rejected",
+      description: `The leave application has been ${action === 'approve' ? 'approved' : 'rejected'} successfully.`
+    });
+    
+    // In a real app, you would update the leave status in the database
+  };
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="page-title">Leave Approval</h1>
-        <p className="text-gray-500">Manage leave applications from staff and teachers</p>
+        <p className="text-gray-500">
+          {isTeacher 
+            ? "Manage leave applications from students" 
+            : "Manage leave applications from staff and teachers"}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -117,21 +211,21 @@ const LeaveApproval = () => {
             <p className="dashboard-label">Pending Leaves</p>
             <FileCheck className="text-yellow-500" />
           </div>
-          <p className="dashboard-stat mt-2">3</p>
+          <p className="dashboard-stat mt-2">{pendingCount}</p>
         </div>
         <div className="dashboard-card bg-soft-green">
           <div className="flex justify-between items-center">
             <p className="dashboard-label">Approved Leaves</p>
             <FileCheck className="text-green-500" />
           </div>
-          <p className="dashboard-stat mt-2">1</p>
+          <p className="dashboard-stat mt-2">{approvedCount}</p>
         </div>
         <div className="dashboard-card bg-soft-red">
           <div className="flex justify-between items-center">
             <p className="dashboard-label">Rejected Leaves</p>
             <FileCheck className="text-red-500" />
           </div>
-          <p className="dashboard-stat mt-2">1</p>
+          <p className="dashboard-stat mt-2">{rejectedCount}</p>
         </div>
       </div>
 
@@ -166,9 +260,21 @@ const LeaveApproval = () => {
                         <span className="bg-soft-blue px-2 py-1 text-xs rounded-md">
                           {leave.role}
                         </span>
-                        <span className="text-sm text-gray-500">
-                          {leave.subject || leave.department}
-                        </span>
+                        {leave.subject && (
+                          <span className="text-sm text-gray-500">
+                            {leave.subject}
+                          </span>
+                        )}
+                        {leave.department && (
+                          <span className="text-sm text-gray-500">
+                            {leave.department}
+                          </span>
+                        )}
+                        {leave.class && (
+                          <span className="text-sm text-gray-500">
+                            Class: {leave.class}, Roll No: {leave.rollNo}
+                          </span>
+                        )}
                       </div>
                       <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-600">
                         <div className="flex items-center gap-1">
@@ -182,6 +288,11 @@ const LeaveApproval = () => {
                         <div>
                           <span className="font-medium">Applied:</span> {new Date(leave.appliedOn).toLocaleDateString()}
                         </div>
+                        {leave.appliedBy && (
+                          <div>
+                            <span className="font-medium">Applied By:</span> {leave.appliedBy}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(leave.status)}`}>
@@ -194,11 +305,21 @@ const LeaveApproval = () => {
                     
                     {leave.status === 'pending' && (
                       <div className="flex gap-2 mt-3">
-                        <Button size="sm" variant="default" className="flex gap-1">
+                        <Button 
+                          size="sm" 
+                          variant="default" 
+                          className="flex gap-1"
+                          onClick={() => handleLeaveAction(leave.id, 'approve')}
+                        >
                           <Check size={16} />
                           Approve
                         </Button>
-                        <Button size="sm" variant="outline" className="flex gap-1 text-red-500">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="flex gap-1 text-red-500"
+                          onClick={() => handleLeaveAction(leave.id, 'reject')}
+                        >
                           <X size={16} />
                           Reject
                         </Button>

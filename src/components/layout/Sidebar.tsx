@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -67,7 +67,13 @@ const Sidebar = () => {
       title: "Attendance Management",
       icon: <CheckCircle size={18} />,
       path: "/dashboard/attendance-management",
-      roles: ['admin', 'teacher']
+      roles: ['admin']
+    },
+    {
+      title: "Teacher Attendance",
+      icon: <CheckCircle size={18} />,
+      path: "/dashboard/teacher-attendance",
+      roles: ['teacher']
     },
     {
       title: "Salary Management",
@@ -157,7 +163,7 @@ const Sidebar = () => {
       title: "Leave",
       icon: <Clock size={18} />,
       path: "/dashboard/leave",
-      roles: ['teacher', 'parent']
+      roles: ['teacher', 'parent', 'student']
     }
   ];
 
