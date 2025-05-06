@@ -174,7 +174,7 @@ const StudentMarks = () => {
         </Card>
         
         <Card className="p-4 flex-1 bg-soft-red">
-          <h3 className="text-sm font-medium text-gray-700 mb-2">Students > 90%</h3>
+          <h3 className="text-sm font-medium text-gray-700 mb-2">Students &gt; 90%</h3>
           <div className="text-2xl font-bold">{classPerformance.studentsAbove90}</div>
           <p className="text-xs text-gray-500">Out of {students.length}</p>
         </Card>
@@ -370,7 +370,7 @@ const StudentMarks = () => {
                 </div>
               </Card>
               <Card className="p-4 bg-red-50">
-                <div className="text-sm font-medium text-gray-700">D / F (< 60%)</div>
+                <div className="text-sm font-medium text-gray-700">D / F (&lt; 60%)</div>
                 <div className="text-2xl font-bold">{students.filter(s => s.grade === 'D' || s.grade === 'F').length}</div>
                 <div className="h-2 w-full bg-gray-200 rounded-full mt-2">
                   <div 
