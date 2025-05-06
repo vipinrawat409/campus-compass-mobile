@@ -32,6 +32,8 @@ import Leave from "./pages/common/Leave";
 import StaffLeave from "./pages/staff/StaffLeave";
 import StaffSalary from "./pages/staff/StaffSalary";
 import NotFound from "./pages/NotFound";
+import StudentAttendance from "./pages/teacher/StudentAttendance";
+import StudentMarks from "./pages/teacher/StudentMarks";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +68,8 @@ const App = () => (
                   <Route path="leave" element={<Leave />} />
                   <Route path="staff-leave" element={<StaffLeave />} />
                   <Route path="staff-salary" element={<StaffSalary />} />
+                  <Route path="student-attendance" element={<StudentAttendance />} />
+                  <Route path="student-marks" element={<StudentMarks />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>
