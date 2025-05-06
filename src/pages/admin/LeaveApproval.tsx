@@ -7,6 +7,36 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from "@/components/ui/use-toast";
 
+// Define proper types for our leave applications
+interface BaseLeave {
+  id: number;
+  name: string;
+  role: string;
+  leaveType: string;
+  fromDate: string;
+  toDate: string;
+  days: number;
+  reason: string;
+  status: string;
+  appliedOn: string;
+}
+
+interface StaffTeacherLeave extends BaseLeave {
+  subject?: string;
+  department?: string;
+}
+
+interface StudentLeave extends BaseLeave {
+  class: string;
+  rollNo: string;
+  appliedBy: string;
+  approvedOn?: string;
+  rejectedOn?: string;
+  rejectionReason?: string;
+}
+
+type LeaveApplication = StaffTeacherLeave | StudentLeave;
+
 const LeaveApproval = () => {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -17,7 +47,7 @@ const LeaveApproval = () => {
   const isTeacher = user?.role === 'teacher';
   
   // Mock leave applications data for admin
-  const adminLeaveData = [
+  const adminLeaveData: LeaveApplication[] = [
     { 
       id: 1, 
       name: 'John Miller', 
@@ -86,7 +116,7 @@ const LeaveApproval = () => {
   ];
   
   // Mock leave applications data for teacher (only student leaves)
-  const teacherLeaveData = [
+  const teacherLeaveData: StudentLeave[] = [
     { 
       id: 1, 
       name: 'Emma Thompson', 
@@ -130,6 +160,7 @@ const LeaveApproval = () => {
       reason: 'Inter-school competition',
       status: 'approved',
       appliedOn: '2025-05-16',
+      appliedBy: 'Parent',
       approvedOn: '2025-05-16'
     },
     { 
@@ -145,6 +176,7 @@ const LeaveApproval = () => {
       reason: 'Doctor appointment and recovery',
       status: 'rejected',
       appliedOn: '2025-05-14',
+      appliedBy: 'Parent',
       rejectedOn: '2025-05-15',
       rejectionReason: 'Important test scheduled'
     }
@@ -152,15 +184,24 @@ const LeaveApproval = () => {
   
   const leaveData = isTeacher ? teacherLeaveData : adminLeaveData;
 
+  // Helper functions to check object types
+  const isStudentLeave = (leave: LeaveApplication): leave is StudentLeave => {
+    return 'class' in leave && 'rollNo' in leave;
+  };
+
+  const isStaffTeacherLeave = (leave: LeaveApplication): leave is StaffTeacherLeave => {
+    return ('subject' in leave || 'department' in leave) && !('class' in leave);
+  };
+
   // Filter leave applications based on search term and active tab
   const filteredLeaves = leaveData.filter(leave => 
     (activeTab === 'all' || leave.status === activeTab) &&
     (
       leave.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       leave.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (leave.subject && leave.subject.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (leave.department && leave.department.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (leave.class && leave.class.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (isStaffTeacherLeave(leave) && leave.subject && leave.subject.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (isStaffTeacherLeave(leave) && leave.department && leave.department.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (isStudentLeave(leave) && leave.class.toLowerCase().includes(searchTerm.toLowerCase())) ||
       leave.leaveType.toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
@@ -260,17 +301,17 @@ const LeaveApproval = () => {
                         <span className="bg-soft-blue px-2 py-1 text-xs rounded-md">
                           {leave.role}
                         </span>
-                        {leave.subject && (
+                        {isStaffTeacherLeave(leave) && leave.subject && (
                           <span className="text-sm text-gray-500">
                             {leave.subject}
                           </span>
                         )}
-                        {leave.department && (
+                        {isStaffTeacherLeave(leave) && leave.department && (
                           <span className="text-sm text-gray-500">
                             {leave.department}
                           </span>
                         )}
-                        {leave.class && (
+                        {isStudentLeave(leave) && (
                           <span className="text-sm text-gray-500">
                             Class: {leave.class}, Roll No: {leave.rollNo}
                           </span>
@@ -288,7 +329,7 @@ const LeaveApproval = () => {
                         <div>
                           <span className="font-medium">Applied:</span> {new Date(leave.appliedOn).toLocaleDateString()}
                         </div>
-                        {leave.appliedBy && (
+                        {isStudentLeave(leave) && leave.appliedBy && (
                           <div>
                             <span className="font-medium">Applied By:</span> {leave.appliedBy}
                           </div>
