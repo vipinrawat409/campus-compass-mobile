@@ -70,9 +70,15 @@ const Sidebar = () => {
       roles: ['admin']
     },
     {
-      title: "Teacher Attendance",
+      title: "Student Attendance",
       icon: <CheckCircle size={18} />,
-      path: "/dashboard/teacher-attendance",
+      path: "/dashboard/student-attendance",
+      roles: ['teacher']
+    },
+    {
+      title: "Student Marks",
+      icon: <FileText size={18} />,
+      path: "/dashboard/student-marks",
       roles: ['teacher']
     },
     {
@@ -163,7 +169,7 @@ const Sidebar = () => {
       title: "Leave",
       icon: <Clock size={18} />,
       path: "/dashboard/leave",
-      roles: ['teacher', 'parent', 'student']
+      roles: ['teacher', 'parent']
     }
   ];
 

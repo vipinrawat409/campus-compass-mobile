@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import StaffLeave from '../staff/StaffLeave';
 import TeacherLeave from '../teacher/TeacherLeave';
 import ParentLeave from '../parent/ParentLeave';
-import StudentLeave from '../student/StudentLeave';
 
 const Leave = () => {
   const { user } = useAuth();
@@ -14,8 +13,6 @@ const Leave = () => {
   // Render appropriate leave component based on user role
   const renderLeaveComponent = () => {
     switch (user.role) {
-      case 'student':
-        return <StudentLeave />;
       case 'teacher':
         return <TeacherLeave />;
       case 'staff':
