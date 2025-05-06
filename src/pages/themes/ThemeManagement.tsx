@@ -1,66 +1,71 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { School, Palette, CheckCircle, EyeOff, PaintBucket } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from "@/components/ui/sonner";
 import { cn } from '@/lib/utils';
-
-const INSTITUTES = [
-  { id: 1, name: "Valley Public School", location: "New York" },
-  { id: 2, name: "Greenwood Academy", location: "Chicago" },
-  { id: 3, name: "Sunshine Elementary", location: "San Francisco" }
-];
+import { INSTITUTES } from '@/contexts/AuthContext';
+import { ThemeColor } from '@/contexts/ThemeContext';
 
 const COLOR_THEMES = [
   { 
     id: 'blue', 
     name: 'Blue',
-    primary: '#3498db',
+    primary: '#3B82F6',
     secondary: '#2980b9',
-    accent: '#e1f0fa',
+    accent: '#D3E4FD',
     text: '#2c3e50'
   },
   { 
     id: 'green', 
     name: 'Green',
-    primary: '#2ecc71',
+    primary: '#10B981',
     secondary: '#27ae60',
-    accent: '#e8f8f5',
+    accent: '#F2FCE2',
     text: '#27ae60'  
   },
   { 
     id: 'purple', 
     name: 'Purple',
-    primary: '#9b59b6',
+    primary: '#8B5CF6',
     secondary: '#8e44ad',
-    accent: '#f5eef8',
+    accent: '#E5DEFF',
     text: '#6c3483'
+  },
+  { 
+    id: 'pink', 
+    name: 'Pink',
+    primary: '#EC4899',
+    secondary: '#d35400',
+    accent: '#FFDEE2',
+    text: '#d35400'
+  },
+  { 
+    id: 'peach', 
+    name: 'Peach',
+    primary: '#F97316',
+    secondary: '#c0392b',
+    accent: '#FDE1D3',
+    text: '#c0392b'
+  },
+  { 
+    id: 'yellow', 
+    name: 'Yellow',
+    primary: '#EAB308',
+    secondary: '#16a085',
+    accent: '#FEF7CD',
+    text: '#16a085'
   },
   { 
     id: 'orange', 
     name: 'Orange',
-    primary: '#e67e22',
+    primary: '#F59E0B',
     secondary: '#d35400',
-    accent: '#fef5ea',
+    accent: '#FEC6A1',
     text: '#d35400'
   },
-  { 
-    id: 'red', 
-    name: 'Red',
-    primary: '#e74c3c',
-    secondary: '#c0392b',
-    accent: '#fdedeb',
-    text: '#c0392b'
-  },
-  { 
-    id: 'teal', 
-    name: 'Teal',
-    primary: '#1abc9c',
-    secondary: '#16a085',
-    accent: '#e8f8f5',
-    text: '#16a085'
-  }
 ];
 
 interface PreviewCardProps {
@@ -118,8 +123,26 @@ const PreviewCard = ({ primaryColor, secondaryColor, accentColor, textColor }: P
 
 const ThemeManagement = () => {
   const { user } = useAuth();
+  const { themeColor, changeTheme } = useTheme();
   const [selectedInstitute, setSelectedInstitute] = useState<number | null>(null);
   const [selectedTheme, setSelectedTheme] = useState<string | null>(null);
+  const [instituteThemes, setInstituteThemes] = useState<Record<number, string>>({});
+
+  // Load institute themes on component mount
+  useEffect(() => {
+    const savedThemes = localStorage.getItem('institute-themes-mapping');
+    if (savedThemes) {
+      setInstituteThemes(JSON.parse(savedThemes));
+    } else {
+      // Initialize with default themes
+      const defaultThemes: Record<number, string> = {};
+      INSTITUTES.forEach(institute => {
+        defaultThemes[institute.id] = institute.theme;
+      });
+      setInstituteThemes(defaultThemes);
+      localStorage.setItem('institute-themes-mapping', JSON.stringify(defaultThemes));
+    }
+  }, []);
 
   if (user?.role !== 'superadmin') {
     return (
@@ -137,7 +160,8 @@ const ThemeManagement = () => {
 
   const handleSelectInstitute = (id: number) => {
     setSelectedInstitute(id);
-    setSelectedTheme(null);
+    // Set the initial selected theme to what the institute currently has
+    setSelectedTheme(instituteThemes[id] || null);
   };
 
   const handleSelectTheme = (id: string) => {
@@ -151,13 +175,22 @@ const ThemeManagement = () => {
     const theme = COLOR_THEMES.find(t => t.id === selectedTheme);
     
     if (institute && theme) {
-      toast("Theme applied", {
+      // Update the institute theme in our state
+      const updatedThemes = { ...instituteThemes, [selectedInstitute]: selectedTheme };
+      setInstituteThemes(updatedThemes);
+      
+      // Save to localStorage for persistence
+      localStorage.setItem('institute-themes-mapping', JSON.stringify(updatedThemes));
+      
+      toast(`Theme Applied to ${institute.name}`, {
         description: `${theme.name} theme has been applied to ${institute.name}`
       });
     }
   };
 
-  const selectedThemeData = selectedTheme ? COLOR_THEMES.find(theme => theme.id === selectedTheme) : null;
+  const selectedThemeData = selectedTheme 
+    ? COLOR_THEMES.find(theme => theme.id === selectedTheme) 
+    : null;
 
   return (
     <div className="space-y-6">
@@ -187,9 +220,17 @@ const ThemeManagement = () => {
                     <p className="text-xs text-gray-500">{institute.location}</p>
                   </div>
                 </div>
-                {selectedInstitute === institute.id && (
-                  <CheckCircle size={18} className="text-primary" />
-                )}
+                <div className="flex items-center space-x-2">
+                  {instituteThemes[institute.id] && (
+                    <div 
+                      className="w-4 h-4 rounded-full" 
+                      style={{ backgroundColor: COLOR_THEMES.find(t => t.id === instituteThemes[institute.id])?.primary }}
+                    />
+                  )}
+                  {selectedInstitute === institute.id && (
+                    <CheckCircle size={18} className="text-primary" />
+                  )}
+                </div>
               </div>
             ))}
           </div>

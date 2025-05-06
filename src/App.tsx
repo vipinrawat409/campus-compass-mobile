@@ -42,8 +42,8 @@ const App = () => (
     <TooltipProvider>
       <BrowserRouter>
         <AuthProvider>
-          <NavigationProvider>
-            <ThemeProvider>
+          <ThemeProvider>
+            <NavigationProvider>
               <Routes>
                 <Route path="/" element={<LoginPage />} />
                 <Route path="/dashboard" element={<DashboardLayout />}>
@@ -75,8 +75,8 @@ const App = () => (
               </Routes>
               <Toaster />
               <SonnerToaster />
-            </ThemeProvider>
-          </NavigationProvider>
+            </NavigationProvider>
+          </ThemeProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

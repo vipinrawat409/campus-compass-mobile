@@ -1,17 +1,23 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-type ThemeColor = 'blue' | 'green' | 'purple' | 'pink' | 'peach' | 'yellow' | 'orange';
+export type ThemeColor = 'blue' | 'green' | 'purple' | 'pink' | 'peach' | 'yellow' | 'orange';
 
 interface ThemeContextType {
   themeColor: ThemeColor;
   changeTheme: (color: ThemeColor) => void;
+  getInstituteTheme: (instituteId: number) => ThemeColor;
+}
+
+interface InstituteThemeMapping {
+  [instituteId: number]: ThemeColor;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [themeColor, setThemeColor] = useState<ThemeColor>('blue');
+  const [instituteThemes, setInstituteThemes] = useState<InstituteThemeMapping>({});
 
   // Apply CSS variables based on theme color
   useEffect(() => {
@@ -26,11 +32,23 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
 
   // Load theme from localStorage on initial render
   useEffect(() => {
+    // Load user's theme
     const savedTheme = localStorage.getItem('institute-theme') as ThemeColor | null;
     if (savedTheme) {
       setThemeColor(savedTheme);
     }
+    
+    // Load institute themes mapping
+    const savedInstituteThemes = localStorage.getItem('institute-themes-mapping');
+    if (savedInstituteThemes) {
+      setInstituteThemes(JSON.parse(savedInstituteThemes));
+    }
   }, []);
+
+  // Get theme for a specific institute
+  const getInstituteTheme = (instituteId: number): ThemeColor => {
+    return instituteThemes[instituteId] || 'blue';
+  };
 
   // Helper functions to get color values
   function getThemeColorValue(color: ThemeColor): string {
@@ -60,7 +78,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <ThemeContext.Provider value={{ themeColor, changeTheme }}>
+    <ThemeContext.Provider value={{ themeColor, changeTheme, getInstituteTheme }}>
       {children}
     </ThemeContext.Provider>
   );

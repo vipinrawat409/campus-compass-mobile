@@ -6,11 +6,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from "@/components/ui/sonner";
+import { 
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { INSTITUTES } from '@/contexts/AuthContext';
 
 const LoginPage = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showCredentials, setShowCredentials] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -70,7 +80,7 @@ const LoginPage = () => {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your username (e.g. SA201, TC123)"
+                placeholder="Enter your username (e.g. SA001, AD001)"
                 className="rounded-lg"
                 autoComplete="username"
               />
@@ -93,7 +103,7 @@ const LoginPage = () => {
                 autoComplete="current-password"
               />
               <p className="text-xs text-gray-500 italic">
-                (Use "password" as the password for demo)
+                (Use "password" as the password for all demo accounts)
               </p>
             </div>
             
@@ -107,20 +117,85 @@ const LoginPage = () => {
           </form>
         </div>
         
-        <div className="mt-5 text-center text-sm text-gray-500">
-          <p>Demo user credentials:</p>
-          <div className="grid grid-cols-2 gap-2 mt-2">
-            <div className="text-left pl-4">
-              <p>SA201 - Super Admin</p>
-              <p>AD201 - Admin</p>
-              <p>TC201 - Teacher</p>
+        <div className="mt-5">
+          <Button 
+            variant="outline" 
+            className="w-full"
+            onClick={() => setShowCredentials(!showCredentials)}
+          >
+            {showCredentials ? "Hide Demo Credentials" : "Show Demo Credentials"}
+          </Button>
+          
+          {showCredentials && (
+            <div className="mt-4 bg-white shadow-sm rounded-xl border border-gray-100 p-4 overflow-hidden">
+              <h3 className="font-medium mb-2">Available Demo Accounts</h3>
+              
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Username</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Institute</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell className="font-medium">SA001</TableCell>
+                      <TableCell>Super Admin</TableCell>
+                      <TableCell>All Institutes</TableCell>
+                    </TableRow>
+                    
+                    {INSTITUTES.map(institute => (
+                      <React.Fragment key={institute.id}>
+                        <TableRow>
+                          <TableCell className="font-medium">AD00{institute.id}</TableCell>
+                          <TableCell>Admin</TableCell>
+                          <TableCell>{institute.name}</TableCell>
+                        </TableRow>
+                        
+                        {institute.id <= 3 && (
+                          <TableRow>
+                            <TableCell className="font-medium">TC00{institute.id}</TableCell>
+                            <TableCell>Teacher</TableCell>
+                            <TableCell>{institute.name}</TableCell>
+                          </TableRow>
+                        )}
+                        
+                        {institute.id === 1 && (
+                          <>
+                            <TableRow>
+                              <TableCell className="font-medium">ST001</TableCell>
+                              <TableCell>Staff</TableCell>
+                              <TableCell>{institute.name}</TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell className="font-medium">SD001</TableCell>
+                              <TableCell>Student</TableCell>
+                              <TableCell>{institute.name}</TableCell>
+                            </TableRow>
+                            <TableRow>
+                              <TableCell className="font-medium">PR001</TableCell>
+                              <TableCell>Parent</TableCell>
+                              <TableCell>{institute.name}</TableCell>
+                            </TableRow>
+                          </>
+                        )}
+
+                        {institute.id === 2 && (
+                          <TableRow>
+                            <TableCell className="font-medium">SD002</TableCell>
+                            <TableCell>Student</TableCell>
+                            <TableCell>{institute.name}</TableCell>
+                          </TableRow>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </div>
-            <div className="text-left">
-              <p>ST201 - Staff</p>
-              <p>SD201 - Student</p>
-              <p>PR201 - Parent</p>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

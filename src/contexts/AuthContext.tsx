@@ -2,9 +2,27 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "@/components/ui/sonner";
+import { ThemeColor } from './ThemeContext';
 
 // Define user roles
 export type UserRole = 'superadmin' | 'admin' | 'teacher' | 'staff' | 'student' | 'parent';
+
+// Define institute interface
+export interface Institute {
+  id: number;
+  name: string;
+  location: string;
+  theme: ThemeColor;
+}
+
+// List of institutes
+export const INSTITUTES: Institute[] = [
+  { id: 1, name: "Valley Public School", location: "New York", theme: "blue" },
+  { id: 2, name: "Greenwood Academy", location: "Chicago", theme: "green" },
+  { id: 3, name: "Sunshine Elementary", location: "San Francisco", theme: "purple" },
+  { id: 4, name: "Oakridge High School", location: "Los Angeles", theme: "peach" },
+  { id: 5, name: "Riverdale College", location: "Boston", theme: "orange" }
+];
 
 // Define user interface
 export interface User {
@@ -12,6 +30,7 @@ export interface User {
   name: string;
   username: string;
   role: UserRole;
+  instituteId?: number;
   instituteName?: string;
 }
 
@@ -22,6 +41,123 @@ interface AuthContextType {
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
 }
+
+// Sample users for demo
+const DEMO_USERS: Record<string, User> = {
+  // Super Admin
+  "SA001": {
+    id: "user-sa001",
+    name: "Super Admin",
+    username: "SA001",
+    role: "superadmin"
+  },
+  
+  // Valley Public School (ID: 1)
+  "AD001": {
+    id: "user-ad001",
+    name: "Valley Admin",
+    username: "AD001",
+    role: "admin",
+    instituteId: 1,
+    instituteName: "Valley Public School"
+  },
+  "TC001": {
+    id: "user-tc001",
+    name: "John Smith",
+    username: "TC001",
+    role: "teacher",
+    instituteId: 1,
+    instituteName: "Valley Public School"
+  },
+  "ST001": {
+    id: "user-st001",
+    name: "Mike Johnson",
+    username: "ST001",
+    role: "staff",
+    instituteId: 1,
+    instituteName: "Valley Public School"
+  },
+  "SD001": {
+    id: "user-sd001",
+    name: "Emma Wilson",
+    username: "SD001",
+    role: "student",
+    instituteId: 1,
+    instituteName: "Valley Public School"
+  },
+  "PR001": {
+    id: "user-pr001",
+    name: "Sarah Wilson",
+    username: "PR001",
+    role: "parent",
+    instituteId: 1,
+    instituteName: "Valley Public School"
+  },
+  
+  // Greenwood Academy (ID: 2)
+  "AD002": {
+    id: "user-ad002",
+    name: "Greenwood Admin",
+    username: "AD002",
+    role: "admin",
+    instituteId: 2,
+    instituteName: "Greenwood Academy"
+  },
+  "TC002": {
+    id: "user-tc002",
+    name: "Emily Johnson",
+    username: "TC002",
+    role: "teacher",
+    instituteId: 2,
+    instituteName: "Greenwood Academy"
+  },
+  "SD002": {
+    id: "user-sd002",
+    name: "Jake Brown",
+    username: "SD002",
+    role: "student",
+    instituteId: 2,
+    instituteName: "Greenwood Academy"
+  },
+  
+  // Sunshine Elementary (ID: 3)
+  "AD003": {
+    id: "user-ad003",
+    name: "Sunshine Admin",
+    username: "AD003",
+    role: "admin",
+    instituteId: 3,
+    instituteName: "Sunshine Elementary"
+  },
+  "TC003": {
+    id: "user-tc003",
+    name: "Robert Davis",
+    username: "TC003",
+    role: "teacher",
+    instituteId: 3,
+    instituteName: "Sunshine Elementary"
+  },
+  
+  // Oakridge High School (ID: 4)
+  "AD004": {
+    id: "user-ad004",
+    name: "Oakridge Admin",
+    username: "AD004", 
+    role: "admin",
+    instituteId: 4,
+    instituteName: "Oakridge High School"
+  },
+  
+  // Riverdale College (ID: 5)
+  "AD005": {
+    id: "user-ad005",
+    name: "Riverdale Admin",
+    username: "AD005",
+    role: "admin", 
+    instituteId: 5,
+    instituteName: "Riverdale College"
+  }
+};
 
 // Create auth context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -47,24 +183,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  // Helper to determine role based on username
-  const getRoleFromUsername = (username: string): UserRole => {
-    const prefix = username.substring(0, 2).toUpperCase();
-    
-    switch (prefix) {
-      case 'SA': return 'superadmin';
-      case 'AD': return 'admin';
-      case 'TC': return 'teacher';
-      case 'ST': return 'staff';
-      case 'SD': return 'student';
-      case 'PR': return 'parent';
-      default: throw new Error('Invalid username format');
-    }
-  };
-
   const login = async (username: string, password: string) => {
     try {
-      // This is a mock - in a real app, you'd validate against a backend
+      // For demo purposes, any password works
       if (password !== 'password') {
         toast("Invalid credentials", {
           description: "Please check your username and password"
@@ -72,28 +193,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
 
-      const role = getRoleFromUsername(username);
+      // Find the user in our demo users
+      const demoUser = DEMO_USERS[username];
       
-      const mockUser: User = {
-        id: `user-${Date.now()}`,
-        name: `${role.charAt(0).toUpperCase() + role.slice(1)} User`,
-        username,
-        role,
-      };
-
-      // Add institute name for superadmin and admin roles
-      if (role === 'superadmin') {
-        mockUser.instituteName = 'All Institutes';
-      } else if (role === 'admin') {
-        mockUser.instituteName = 'Valley Public School';
+      if (!demoUser) {
+        toast("User not found", {
+          description: "No user found with that username"
+        });
+        return false;
       }
-
-      setUser(mockUser);
+      
+      setUser(demoUser);
       setIsAuthenticated(true);
-      localStorage.setItem('user', JSON.stringify(mockUser));
+      localStorage.setItem('user', JSON.stringify(demoUser));
       
       toast("Login successful", {
-        description: `Welcome back, ${mockUser.name}`
+        description: `Welcome back, ${demoUser.name}`
       });
       
       return true;
