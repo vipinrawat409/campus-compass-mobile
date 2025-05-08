@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -32,7 +33,12 @@ const TimeTableGenerator: React.FC<TimeTableGeneratorProps> = ({
     allowManualAdjustments: true,
     detectTeacherConflicts: true,
     detectRoomConflicts: true,
-    enableSubstitution: true
+    enableSubstitution: true,
+    fixedLunchBreak: true,
+    lunchBreakPosition: 'middle', // 'middle' or custom position
+    maintainTeacherAvailability: true,
+    autoAdjustNewSubjects: true,
+    smartConflictResolution: true
   });
   
   const classes = ['7-A', '7-B', '8-A', '8-B', '9-A', '9-B', '10-A', '10-B'];
@@ -98,6 +104,34 @@ const TimeTableGenerator: React.FC<TimeTableGeneratorProps> = ({
                   <SelectItem value="6-day">Monday - Saturday</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="fixedLunchBreak">Fixed lunch break position</Label>
+                <Switch
+                  id="fixedLunchBreak"
+                  checked={settings.fixedLunchBreak}
+                  onCheckedChange={(checked) => handleChange('fixedLunchBreak', checked)}
+                />
+              </div>
+              <p className="text-sm text-gray-500">
+                Places lunch break at the middle of the day for all classes
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="maintainTeacherAvailability">Maintain teacher availability</Label>
+                <Switch
+                  id="maintainTeacherAvailability"
+                  checked={settings.maintainTeacherAvailability}
+                  onCheckedChange={(checked) => handleChange('maintainTeacherAvailability', checked)}
+                />
+              </div>
+              <p className="text-sm text-gray-500">
+                Prevents scheduling conflicts for teachers across classes
+              </p>
             </div>
           </div>
           
@@ -183,6 +217,20 @@ const TimeTableGenerator: React.FC<TimeTableGeneratorProps> = ({
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
+              <Label htmlFor="autoAdjustNewSubjects">Auto-adjust for new subjects</Label>
+              <Switch
+                id="autoAdjustNewSubjects"
+                checked={settings.autoAdjustNewSubjects}
+                onCheckedChange={(checked) => handleChange('autoAdjustNewSubjects', checked)}
+              />
+            </div>
+            <p className="text-sm text-gray-500">
+              Automatically adjusts timetable when new subjects are added
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
               <Label htmlFor="enableSubstitution">Enable teacher substitution system</Label>
               <Switch
                 id="enableSubstitution"
@@ -230,6 +278,19 @@ const TimeTableGenerator: React.FC<TimeTableGeneratorProps> = ({
                     <SelectItem value="sameday">Allow same-day scheduling</SelectItem>
                   </SelectContent>
                 </Select>
+              </Card>
+
+              <Card className="p-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Smart conflict resolution</p>
+                    <p className="text-sm text-gray-500">Automatically resolve scheduling conflicts</p>
+                  </div>
+                  <Switch
+                    checked={settings.smartConflictResolution}
+                    onCheckedChange={(checked) => handleChange('smartConflictResolution', checked)}
+                  />
+                </div>
               </Card>
 
               <Card className="p-3">

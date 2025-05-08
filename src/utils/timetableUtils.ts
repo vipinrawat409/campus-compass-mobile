@@ -14,6 +14,7 @@ type Teacher = {
   classes: string[];
   unavailablePeriods?: { day: string; period: number }[];
   absent?: boolean;
+  preferences?: { day: string; preferredPeriods: number[] }[];
 };
 
 type Room = {
@@ -56,7 +57,16 @@ const mockSubjects: Subject[] = [
 ];
 
 const mockTeachers: Teacher[] = [
-  { id: 't1', name: 'Mr. Johnson', subjects: ['Mathematics'], classes: ['10-A', '9-A', '8-B'] },
+  { 
+    id: 't1', 
+    name: 'Mr. Johnson', 
+    subjects: ['Mathematics'], 
+    classes: ['10-A', '9-A', '8-B'],
+    preferences: [
+      { day: 'monday', preferredPeriods: [0, 1, 2] },
+      { day: 'wednesday', preferredPeriods: [4, 5] }
+    ]
+  },
   { id: 't2', name: 'Mrs. Smith', subjects: ['Science'], classes: ['10-A', '10-B', '9-B'] },
   { id: 't3', name: 'Ms. Davis', subjects: ['English'], classes: ['10-A', '9-A', '8-A', '7-B'] },
   { id: 't4', name: 'Mr. Wilson', subjects: ['History'], classes: ['10-A', '10-B', '9-A', '9-B'] },
@@ -120,6 +130,12 @@ const isTeacherAvailable = (
     return false;
   }
   
+  // Check if teacher has unavailable periods
+  if (teacher.unavailablePeriods && 
+      teacher.unavailablePeriods.some(up => up.day === day && up.period === period)) {
+    return false;
+  }
+  
   // Check if teacher is already assigned to this period on this day
   return !assignments.some(
     assignment => 
@@ -127,6 +143,20 @@ const isTeacherAvailable = (
       assignment.timeSlot.period === period && 
       assignment.teacher.id === teacher.id
   );
+};
+
+// Function to check if a teacher prefers this timeslot
+const isTeacherPreference = (
+  teacher: Teacher,
+  day: string,
+  period: number
+): boolean => {
+  if (!teacher.preferences) {
+    return true; // No preferences set means any time is fine
+  }
+  
+  const dayPreference = teacher.preferences.find(pref => pref.day === day);
+  return dayPreference ? dayPreference.preferredPeriods.includes(period) : true;
 };
 
 // Function to check if a room is available for a specific timeslot
@@ -180,14 +210,74 @@ const getTeacherForSubject = (
   className: string,
   day: string,
   period: number,
-  assignments: Assignment[]
+  assignments: Assignment[],
+  considerPreferences: boolean
 ): Teacher | null => {
+  // Get eligible teachers who can teach this subject to this class
   const eligibleTeachers = mockTeachers.filter(teacher => 
     teacher.subjects.includes(subject.name) && teacher.classes.includes(className) && !teacher.absent
   );
   
-  // Find first available teacher
+  // If considering preferences, prioritize teachers who prefer this time slot
+  if (considerPreferences) {
+    const preferredTeachers = eligibleTeachers.filter(teacher => 
+      isTeacherPreference(teacher, day, period) && 
+      isTeacherAvailable(teacher, day, period, assignments)
+    );
+    
+    if (preferredTeachers.length > 0) {
+      return preferredTeachers[0];
+    }
+  }
+  
+  // Return first available teacher
   return eligibleTeachers.find(teacher => isTeacherAvailable(teacher, day, period, assignments)) || null;
+};
+
+// Function to determine if a period should be a break/lunch period
+const isBreakPeriod = (
+  period: number,
+  periodsPerDay: number,
+  fixedLunchBreak: boolean,
+  lunchPosition: string
+): boolean => {
+  // Short break after 3rd period
+  if (period === 3) {
+    return true;
+  }
+  
+  // Lunch break
+  if (fixedLunchBreak) {
+    if (lunchPosition === 'middle') {
+      // Place lunch break in the middle of the day
+      const middlePeriod = Math.floor(periodsPerDay / 2);
+      return period === middlePeriod;
+    } else {
+      // Fixed position (e.g. after 6th period)
+      return period === 6;
+    }
+  }
+  
+  return false;
+};
+
+// Function to calculate workload balance score for a teacher
+const calculateWorkloadBalance = (
+  teacher: Teacher,
+  day: string, 
+  assignments: Assignment[]
+): number => {
+  // Count periods already assigned to this teacher on this day
+  const periodsOnThisDay = assignments.filter(
+    a => a.teacher.id === teacher.id && a.timeSlot.day === day
+  ).length;
+  
+  // Count total periods assigned to this teacher across all days
+  const totalPeriods = assignments.filter(a => a.teacher.id === teacher.id).length;
+  
+  // We want to distribute workload evenly across days and teachers
+  // Higher score means more balanced
+  return -(periodsOnThisDay * 2 + totalPeriods);
 };
 
 // Main function to generate timetable
@@ -215,8 +305,10 @@ export const generateTimetable = (settings: any) => {
           
           // Try each period
           for (let period = 0; period < periodsPerDay && !assigned; period++) {
-            // Skip breaks and lunch
-            if (period === 3 || period === 6) continue;
+            // Skip breaks and lunch based on settings
+            if (isBreakPeriod(period, periodsPerDay, settings.fixedLunchBreak, settings.lunchBreakPosition)) {
+              continue;
+            }
             
             // Check if class already has a subject at this time
             const classHasSubject = assignments.some(
@@ -228,7 +320,14 @@ export const generateTimetable = (settings: any) => {
             
             if (!classHasSubject) {
               // Try to find an available teacher
-              const teacher = getTeacherForSubject(subject, className, day, period, assignments);
+              const teacher = getTeacherForSubject(
+                subject, 
+                className, 
+                day, 
+                period, 
+                assignments, 
+                settings.considerPreferences
+              );
               
               if (teacher) {
                 // Try to find an available room
@@ -298,38 +397,66 @@ export const generateTimetable = (settings: any) => {
       time: assignment.timeSlot.time,
       subject: assignment.subject.name,
       teacher: assignment.teacher.name,
-      room: assignment.room.name
+      room: assignment.room.name,
+      class: assignment.class
     });
   });
   
-  // Add breaks and lunch periods
+  // Add breaks and lunch periods for each class
+  classes.forEach(className => {
+    days.forEach(day => {
+      const classPeriods = timetable[day].filter(period => period.class === className);
+      
+      if (classPeriods.length > 0) {
+        // Sort by time
+        classPeriods.sort((a, b) => {
+          const timeA = a.time.split(' - ')[0];
+          const timeB = b.time.split(' - ')[0];
+          return timeA.localeCompare(timeB);
+        });
+        
+        // Add break after 3rd period
+        const breakTime = formatTime(settings.startTime || '08:00', 3, settings.periodDuration || 45);
+        
+        const breakPeriod = {
+          id: `break-${day}-${className}`,
+          time: breakTime,
+          subject: 'Break',
+          teacher: '-',
+          room: '-',
+          class: className
+        };
+        
+        // Calculate lunch period based on settings
+        const lunchPeriodNumber = settings.fixedLunchBreak && settings.lunchBreakPosition === 'middle' 
+          ? Math.floor(periodsPerDay / 2)
+          : 6;
+          
+        const lunchTime = formatTime(settings.startTime || '08:00', lunchPeriodNumber, settings.periodDuration || 45);
+        
+        const lunchPeriod = {
+          id: `lunch-${day}-${className}`,
+          time: lunchTime,
+          subject: 'Lunch',
+          teacher: '-',
+          room: '-',
+          class: className
+        };
+        
+        // Add these breaks to the day's periods
+        timetable[day].push(breakPeriod);
+        timetable[day].push(lunchPeriod);
+      }
+    });
+  });
+  
+  // Sort each day's periods by time for display
   days.forEach(day => {
     if (timetable[day].length > 0) {
-      // Sort by period number
       timetable[day].sort((a, b) => {
         const timeA = a.time.split(' - ')[0];
         const timeB = b.time.split(' - ')[0];
         return timeA.localeCompare(timeB);
-      });
-      
-      // Add break after 3rd period
-      const breakTime = formatTime(settings.startTime || '08:00', 3, settings.periodDuration || 45);
-      timetable[day].splice(3, 0, {
-        id: `break-${day}`,
-        time: breakTime,
-        subject: 'Break',
-        teacher: '-',
-        room: '-'
-      });
-      
-      // Add lunch after 6th period (accounting for the break we just added)
-      const lunchTime = formatTime(settings.startTime || '08:00', 6, settings.periodDuration || 45);
-      timetable[day].splice(7, 0, {
-        id: `lunch-${day}`,
-        time: lunchTime,
-        subject: 'Lunch',
-        teacher: '-',
-        room: '-'
       });
     }
   });
@@ -376,28 +503,30 @@ export const checkForConflict = (
   });
   
   // Check for teacher conflicts
+  const teacherName = mockTeachers.find(t => t.id === teacherId)?.name;
   const teacherConflict = sameTimeSlots.some(slot => 
-    slot.teacher === mockTeachers.find(t => t.id === teacherId)?.name && 
+    slot.teacher === teacherName && 
     slot.class !== className
   );
   
   if (teacherConflict) {
     return { 
       hasConflict: true, 
-      message: `Teacher already has a class during this period on ${day}.` 
+      message: `Teacher ${teacherName} already has a class during this period on ${day}.` 
     };
   }
   
   // Check for room conflicts
+  const roomName = mockRooms.find(r => r.id === roomId)?.name;
   const roomConflict = sameTimeSlots.some(slot => 
-    slot.room === mockRooms.find(r => r.id === roomId)?.name && 
+    slot.room === roomName && 
     slot.class !== className
   );
   
   if (roomConflict) {
     return { 
       hasConflict: true, 
-      message: `Room is already occupied during this period on ${day}.` 
+      message: `Room ${roomName} is already occupied during this period on ${day}.` 
     };
   }
   
@@ -409,7 +538,7 @@ export const checkForConflict = (
   if (classConflict) {
     return { 
       hasConflict: true, 
-      message: `Class already has a subject scheduled at this time on ${day}.` 
+      message: `Class ${className} already has a subject scheduled at this time on ${day}.` 
     };
   }
   
@@ -489,4 +618,157 @@ export const getTeacherTimetable = (
   });
   
   return teacherTimetable;
+};
+
+// Function to add a new subject to an existing timetable
+export const addNewSubjectToTimetable = (
+  className: string,
+  subjectName: string,
+  periodsPerWeek: number,
+  requiresSpecialRoom: boolean,
+  existingTimetable: Record<string, any[]>,
+  settings: any
+): { timetable: Record<string, any[]>, conflicts: Conflict[] } => {
+  // Create a new subject
+  const newSubject: Subject = {
+    id: `s${Date.now()}`,
+    name: subjectName,
+    periodsPerWeek,
+    requiresSpecialRoom
+  };
+  
+  // Convert existing timetable to assignments for conflict checking
+  const days = Object.keys(existingTimetable);
+  const assignments: Assignment[] = [];
+  
+  days.forEach(day => {
+    existingTimetable[day].forEach(period => {
+      if (period.subject !== 'Break' && period.subject !== 'Lunch') {
+        const subject = mockSubjects.find(s => s.name === period.subject) || mockSubjects[0];
+        const teacher = mockTeachers.find(t => t.name === period.teacher) || mockTeachers[0];
+        const room = mockRooms.find(r => r.name === period.room) || mockRooms[0];
+        
+        assignments.push({
+          class: period.class,
+          subject,
+          teacher,
+          room,
+          timeSlot: {
+            day,
+            period: existingTimetable[day].indexOf(period),
+            time: period.time
+          }
+        });
+      }
+    });
+  });
+  
+  // Create a copy of the original timetable
+  const newTimetable = JSON.parse(JSON.stringify(existingTimetable));
+  const conflicts: Conflict[] = [];
+  
+  let periodsAssigned = 0;
+  
+  // Try to schedule the new subject
+  for (let dayIndex = 0; periodsAssigned < periodsPerWeek && dayIndex < days.length; dayIndex++) {
+    const day = days[dayIndex];
+    const periodsPerDay = settings.periodsPerDay || 8;
+    
+    for (let period = 0; period < periodsPerDay && periodsAssigned < periodsPerWeek; period++) {
+      // Skip breaks and lunch
+      if (isBreakPeriod(period, periodsPerDay, settings.fixedLunchBreak, settings.lunchBreakPosition)) {
+        continue;
+      }
+      
+      // Check if class already has a subject at this time
+      const classHasSubject = assignments.some(
+        assignment => 
+          assignment.class === className && 
+          assignment.timeSlot.day === day && 
+          assignment.timeSlot.period === period
+      );
+      
+      if (!classHasSubject) {
+        // Try to find an available teacher
+        const teacher = getTeacherForSubject(
+          newSubject, 
+          className, 
+          day, 
+          period, 
+          assignments,
+          settings.considerPreferences
+        );
+        
+        if (teacher) {
+          // Try to find an available room
+          const room = getSuitableRoom(newSubject, day, period, assignments);
+          
+          if (room) {
+            // Create the time slot
+            const time = formatTime(settings.startTime || '08:00', period, settings.periodDuration || 45);
+            const timeSlot: TimeSlot = { day, period, time };
+            
+            // Add assignment
+            const newAssignment: Assignment = {
+              class: className,
+              subject: newSubject,
+              teacher,
+              room,
+              timeSlot
+            };
+            
+            assignments.push(newAssignment);
+            
+            // Add to timetable
+            newTimetable[day].push({
+              id: `new-${periodsAssigned}-${Date.now()}`,
+              time,
+              subject: newSubject.name,
+              teacher: teacher.name,
+              room: room.name,
+              class: className
+            });
+            
+            periodsAssigned++;
+          } else {
+            // No suitable room available
+            conflicts.push({
+              type: 'room',
+              description: `No suitable room available for ${newSubject.name} in ${className} on ${day}, period ${period + 1}`,
+              resolution: 'Trying another period or day'
+            });
+          }
+        } else {
+          // No teacher available
+          conflicts.push({
+            type: 'teacher',
+            description: `No teacher available for ${newSubject.name} in ${className} on ${day}, period ${period + 1}`,
+            resolution: 'Trying another period or day'
+          });
+        }
+      }
+    }
+  }
+  
+  // If we couldn't assign all periods, log conflict
+  if (periodsAssigned < periodsPerWeek) {
+    conflicts.push({
+      type: 'class',
+      description: `Could only assign ${periodsAssigned}/${periodsPerWeek} periods for ${newSubject.name} in ${className}`,
+      resolution: 'Some periods may need manual assignment'
+    });
+  }
+  
+  // Sort each day's periods by time for display
+  days.forEach(day => {
+    if (newTimetable[day].length > 0) {
+      newTimetable[day].sort((a, b) => {
+        const timeA = a.time.split(' - ')[0];
+        const timeB = b.time.split(' - ')[0];
+        return timeA.localeCompare(timeB);
+      });
+    }
+  });
+  
+  return { timetable: newTimetable, conflicts };
 };

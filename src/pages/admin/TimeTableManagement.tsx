@@ -1,14 +1,20 @@
+
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, Plus, Edit, Trash2, RefreshCw, Bell, User, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, Plus, Edit, Trash2, RefreshCw, Bell, User, AlertCircle, BookOpen } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
+import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import TimeTableGenerator from "@/components/timetable/TimeTableGenerator";
 import SubstitutionModal from "@/components/timetable/SubstitutionModal";
-import { generateTimetable, checkForConflict } from "@/utils/timetableUtils";
+import { 
+  generateTimetable, 
+  checkForConflict, 
+  addNewSubjectToTimetable 
+} from "@/utils/timetableUtils";
 import { 
   Table,
   TableBody,
@@ -26,8 +32,14 @@ const TimeTableManagement = () => {
   const [showGenerator, setShowGenerator] = useState(false);
   const [showSubstitution, setShowSubstitution] = useState(false);
   const [showManualAdjustment, setShowManualAdjustment] = useState(false);
+  const [showAddSubject, setShowAddSubject] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState(null);
   const [conflicts, setConflicts] = useState([]);
+  const [newSubject, setNewSubject] = useState({
+    name: '',
+    periodsPerWeek: 2,
+    requiresSpecialRoom: false
+  });
   const [timetableData, setTimetableData] = useState({
     monday: [
       { id: 1, time: '08:00 - 08:45', subject: 'Mathematics', teacher: 'Mr. Johnson', room: 'Room 101', class: '10-A' },
@@ -85,12 +97,8 @@ const TimeTableManagement = () => {
         // Generate timetable using our algorithm
         const { timetable, conflicts } = generateTimetable(settings);
         
-        // Update state with new timetable - fixed type issue here
-        setTimetableData(prevData => ({
-          ...prevData,
-          ...timetable
-        }));
-        
+        // Update state with new timetable
+        setTimetableData(timetable);
         setConflicts(conflicts);
         
         if (conflicts.length === 0) {
@@ -228,6 +236,73 @@ const TimeTableManagement = () => {
       description: "The timetable has been adjusted successfully.",
     });
   };
+  
+  const handleAddSubject = () => {
+    setShowAddSubject(true);
+  };
+  
+  const handleSaveNewSubject = () => {
+    if (!newSubject.name.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a subject name.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Get the generator settings from local storage or use defaults
+    const settings = JSON.parse(localStorage.getItem('timetableSettings')) || {
+      periodDuration: 45,
+      periodsPerDay: 8,
+      startTime: '08:00',
+      fixedLunchBreak: true,
+      lunchBreakPosition: 'middle',
+      maintainTeacherAvailability: true,
+      autoAdjustNewSubjects: true
+    };
+    
+    // Add new subject to timetable
+    try {
+      const { timetable, conflicts } = addNewSubjectToTimetable(
+        selectedClass,
+        newSubject.name,
+        newSubject.periodsPerWeek,
+        newSubject.requiresSpecialRoom,
+        timetableData,
+        settings
+      );
+      
+      setTimetableData(timetable);
+      
+      if (conflicts.length === 0) {
+        toast({
+          title: "Subject Added",
+          description: `Successfully added ${newSubject.name} to the timetable.`,
+        });
+      } else {
+        setConflicts(conflicts);
+        toast({
+          title: "Subject Added with Adjustments",
+          description: `Added ${newSubject.name} with ${conflicts.length} scheduling conflicts resolved.`,
+          variant: "default"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add the subject. Please try again or adjust manually.",
+        variant: "destructive"
+      });
+    }
+    
+    setShowAddSubject(false);
+    setNewSubject({
+      name: '',
+      periodsPerWeek: 2,
+      requiresSpecialRoom: false
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -256,6 +331,14 @@ const TimeTableManagement = () => {
           </div>
           
           <div className="flex flex-wrap gap-2">
+            <Button 
+              variant="outline"
+              className="flex gap-2"
+              onClick={handleAddSubject}
+            >
+              <BookOpen size={16} />
+              Add Subject
+            </Button>
             <Button 
               variant="outline"
               className="flex gap-2"
@@ -510,6 +593,73 @@ const TimeTableManagement = () => {
               period: 0
             })}>
               {selectedPeriod ? "Update" : "Add"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Add New Subject Dialog */}
+      <Dialog open={showAddSubject} onOpenChange={setShowAddSubject}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Add New Subject to Timetable</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="subjectName">Subject Name</Label>
+              <Input
+                id="subjectName"
+                value={newSubject.name}
+                onChange={(e) => setNewSubject({...newSubject, name: e.target.value})}
+                placeholder="e.g. Physics, Algebra, etc."
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="periodsPerWeek">Periods Per Week</Label>
+              <Input
+                id="periodsPerWeek"
+                type="number"
+                min="1"
+                max="10"
+                value={newSubject.periodsPerWeek}
+                onChange={(e) => setNewSubject({...newSubject, periodsPerWeek: parseInt(e.target.value)})}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="specialRoom">Requires Special Room</Label>
+              <Select
+                value={newSubject.requiresSpecialRoom ? "yes" : "no"}
+                onValueChange={(val) => setNewSubject({...newSubject, requiresSpecialRoom: val === "yes"})}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="yes">Yes</SelectItem>
+                  <SelectItem value="no">No</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500">
+                Examples: Science needs labs, Computer Science needs computer labs, etc.
+              </p>
+            </div>
+            
+            <Alert variant="default" className="bg-blue-50 border-blue-200">
+              <AlertCircle className="h-4 w-4 text-blue-500" />
+              <AlertDescription className="text-blue-800 text-sm">
+                The system will automatically adjust the timetable to include this new subject, respecting teacher availability and avoiding conflicts.
+              </AlertDescription>
+            </Alert>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddSubject(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveNewSubject}>
+              Add Subject
             </Button>
           </DialogFooter>
         </DialogContent>
