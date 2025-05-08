@@ -14,17 +14,20 @@ interface TimeTableGeneratorProps {
   onGenerate: (settings: any) => void;
   onCancel: () => void;
   isGenerating: boolean;
+  selectedClass?: string;
 }
 
 const TimeTableGenerator: React.FC<TimeTableGeneratorProps> = ({ 
   onGenerate, 
   onCancel,
-  isGenerating 
+  isGenerating,
+  selectedClass = '10-A'
 }) => {
   const [settings, setSettings] = useState({
     periodDuration: 45,
     periodsPerDay: 8,
     startTime: '08:00',
+    endTime: '16:00',
     avoidConsecutive: true,
     distributeSubjects: true,
     optimizeRooms: true,
@@ -38,7 +41,8 @@ const TimeTableGenerator: React.FC<TimeTableGeneratorProps> = ({
     lunchBreakPosition: 'middle', // 'middle' or custom position
     maintainTeacherAvailability: true,
     autoAdjustNewSubjects: true,
-    smartConflictResolution: true
+    smartConflictResolution: true,
+    selectedClass: selectedClass // Added selected class
   });
   
   const classes = ['7-A', '7-B', '8-A', '8-B', '9-A', '9-B', '10-A', '10-B'];
@@ -48,6 +52,35 @@ const TimeTableGenerator: React.FC<TimeTableGeneratorProps> = ({
   
   const handleChange = (key: string, value: any) => {
     setSettings(prev => ({ ...prev, [key]: value }));
+  };
+
+  // Calculate and validate end time based on start time, period duration, and number of periods
+  const calculateEndTime = () => {
+    const [hours, minutes] = settings.startTime.split(':').map(Number);
+    const totalMinutes = hours * 60 + minutes + (settings.periodsPerDay * settings.periodDuration);
+    
+    const endHours = Math.floor(totalMinutes / 60);
+    const endMinutes = totalMinutes % 60;
+    
+    return `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
+  };
+  
+  // Store settings in local storage when generating
+  const handleGenerateClick = () => {
+    // Calculate end time based on settings
+    const calculatedEndTime = calculateEndTime();
+    
+    // Update end time in settings
+    const finalSettings = {
+      ...settings,
+      endTime: calculatedEndTime
+    };
+    
+    // Save to local storage
+    localStorage.setItem('timetableSettings', JSON.stringify(finalSettings));
+    
+    // Call the onGenerate callback with settings
+    onGenerate(finalSettings);
   };
   
   return (
@@ -94,8 +127,22 @@ const TimeTableGenerator: React.FC<TimeTableGeneratorProps> = ({
             </div>
             
             <div className="space-y-2">
+              <Label htmlFor="endTimeDisplay">School End Time (calculated)</Label>
+              <Input
+                id="endTimeDisplay"
+                type="time"
+                value={calculateEndTime()}
+                disabled
+                className="bg-gray-50"
+              />
+              <p className="text-xs text-gray-500">
+                End time is calculated based on periods and duration
+              </p>
+            </div>
+            
+            <div className="space-y-2">
               <Label htmlFor="days">School Days</Label>
-              <Select>
+              <Select defaultValue="6-day">
                 <SelectTrigger>
                   <SelectValue placeholder="Monday - Saturday" />
                 </SelectTrigger>
@@ -137,7 +184,7 @@ const TimeTableGenerator: React.FC<TimeTableGeneratorProps> = ({
           
           <div className="p-4 border rounded-md bg-blue-50">
             <p className="text-sm text-blue-800">
-              This will generate timetables for all classes considering teacher availability, subjects, and room constraints.
+              This will generate a timetable for <strong>{selectedClass}</strong> considering teacher availability, subjects, and room constraints.
             </p>
           </div>
         </div>
@@ -322,10 +369,10 @@ const TimeTableGenerator: React.FC<TimeTableGeneratorProps> = ({
           Cancel
         </Button>
         <Button 
-          onClick={() => onGenerate(settings)} 
+          onClick={handleGenerateClick} 
           disabled={isGenerating}
         >
-          {isGenerating ? "Generating..." : "Generate Timetables"}
+          {isGenerating ? "Generating..." : `Generate Timetable for ${selectedClass}`}
         </Button>
       </div>
     </div>

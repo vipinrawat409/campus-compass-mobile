@@ -1,4 +1,3 @@
-
 // Types for timetable generation
 type Subject = {
   id: string;
@@ -116,6 +115,18 @@ const formatTime = (startTime: string, periodIndex: number, duration: number) =>
   const endMins = endMinutes % 60;
   
   return `${startHours.toString().padStart(2, '0')}:${startMins.toString().padStart(2, '0')} - ${endHours.toString().padStart(2, '0')}:${endMins.toString().padStart(2, '0')}`;
+};
+
+// Calculate the number of periods that fit between start and end time
+const calculatePeriodsFromTime = (startTime: string, endTime: string, periodDuration: number) => {
+  const [startHours, startMins] = startTime.split(':').map(Number);
+  const [endHours, endMins] = endTime.split(':').map(Number);
+  
+  const totalStartMins = startHours * 60 + startMins;
+  const totalEndMins = endHours * 60 + endMins;
+  
+  const totalMinutes = totalEndMins - totalStartMins;
+  return Math.floor(totalMinutes / periodDuration);
 };
 
 // Function to check if a teacher is available for a specific timeslot
@@ -283,10 +294,26 @@ const calculateWorkloadBalance = (
 // Main function to generate timetable
 export const generateTimetable = (settings: any) => {
   const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  const classes = ['10-A', '10-B', '9-A', '9-B', '8-A', '8-B', '7-A', '7-B'];
-  const periodsPerDay = settings.periodsPerDay || 8;
+  
+  // If end time is provided, calculate the number of periods that fit
+  let periodsPerDay = settings.periodsPerDay || 8;
+  if (settings.startTime && settings.endTime) {
+    const calculatedPeriods = calculatePeriodsFromTime(
+      settings.startTime, 
+      settings.endTime, 
+      settings.periodDuration || 45
+    );
+    // Only override if calculated periods is valid
+    if (calculatedPeriods > 0) {
+      periodsPerDay = calculatedPeriods;
+    }
+  }
+  
   const conflicts: Conflict[] = [];
   const assignments: Assignment[] = [];
+  
+  // Get the selected class if provided, otherwise generate for all classes
+  const classes = settings.selectedClass ? [settings.selectedClass] : ['10-A', '10-B', '9-A', '9-B', '8-A', '8-B', '7-A', '7-B'];
   
   // For each class, assign subjects
   for (const className of classes) {
@@ -669,10 +696,23 @@ export const addNewSubjectToTimetable = (
   
   let periodsAssigned = 0;
   
+  // Calculate periods per day based on settings
+  let periodsPerDay = settings.periodsPerDay || 8;
+  if (settings.startTime && settings.endTime) {
+    const calculatedPeriods = calculatePeriodsFromTime(
+      settings.startTime, 
+      settings.endTime, 
+      settings.periodDuration || 45
+    );
+    // Only override if calculated periods is valid
+    if (calculatedPeriods > 0) {
+      periodsPerDay = calculatedPeriods;
+    }
+  }
+  
   // Try to schedule the new subject
   for (let dayIndex = 0; periodsAssigned < periodsPerWeek && dayIndex < days.length; dayIndex++) {
     const day = days[dayIndex];
-    const periodsPerDay = settings.periodsPerDay || 8;
     
     for (let period = 0; period < periodsPerDay && periodsAssigned < periodsPerWeek; period++) {
       // Skip breaks and lunch

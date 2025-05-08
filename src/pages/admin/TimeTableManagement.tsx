@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, Plus, Edit, Trash2, RefreshCw, Bell, User, AlertCircle, BookOpen } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { Input } from "@/components/ui/input";
@@ -24,6 +23,28 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+// Define the timetable entry type for type safety
+interface TimetableEntry {
+  id: number | string;
+  time: string;
+  subject: string;
+  teacher: string;
+  room: string;
+  class: string;
+  substituteStatus?: string;
+  substituteTeacher?: string;
+}
+
+// Define the timetable data structure
+interface TimetableData {
+  monday: TimetableEntry[];
+  tuesday: TimetableEntry[];
+  wednesday: TimetableEntry[];
+  thursday: TimetableEntry[];
+  friday: TimetableEntry[];
+  saturday: TimetableEntry[];
+}
+
 const TimeTableManagement = () => {
   const { toast } = useToast();
   const [selectedClass, setSelectedClass] = useState('10-A');
@@ -33,14 +54,16 @@ const TimeTableManagement = () => {
   const [showSubstitution, setShowSubstitution] = useState(false);
   const [showManualAdjustment, setShowManualAdjustment] = useState(false);
   const [showAddSubject, setShowAddSubject] = useState(false);
-  const [selectedPeriod, setSelectedPeriod] = useState(null);
-  const [conflicts, setConflicts] = useState([]);
+  const [selectedPeriod, setSelectedPeriod] = useState<TimetableEntry | null>(null);
+  const [conflicts, setConflicts] = useState<any[]>([]);
   const [newSubject, setNewSubject] = useState({
     name: '',
     periodsPerWeek: 2,
     requiresSpecialRoom: false
   });
-  const [timetableData, setTimetableData] = useState({
+  
+  // Initialize timetable data with proper typing
+  const [timetableData, setTimetableData] = useState<TimetableData>({
     monday: [
       { id: 1, time: '08:00 - 08:45', subject: 'Mathematics', teacher: 'Mr. Johnson', room: 'Room 101', class: '10-A' },
       { id: 2, time: '08:45 - 09:30', subject: 'Science', teacher: 'Mrs. Smith', room: 'Lab 1', class: '10-A' },
@@ -73,7 +96,7 @@ const TimeTableManagement = () => {
     saturday: []
   });
   
-  const classes = ['10-A', '10-B', '9-A', '9-B', '8-A', '8-B', '7-A', '7-B'];
+  const classes = ['7-A', '7-B', '8-A', '8-B', '9-A', '9-B', '10-A', '10-B'];
   const days = [
     { id: 'monday', label: 'Monday' },
     { id: 'tuesday', label: 'Tuesday' },
@@ -94,17 +117,30 @@ const TimeTableManagement = () => {
     // Simulate API call delay
     setTimeout(() => {
       try {
-        // Generate timetable using our algorithm
-        const { timetable, conflicts } = generateTimetable(settings);
+        // Generate timetable using our algorithm for the selected class only
+        const { timetable, conflicts } = generateTimetable({
+          ...settings,
+          selectedClass: selectedClass // Pass the selected class to the generator
+        });
         
         // Update state with new timetable
-        setTimetableData(timetable);
+        // Create a new object with the same structure as the current timetableData
+        const updatedTimetable: TimetableData = {
+          monday: timetable.monday || [],
+          tuesday: timetable.tuesday || [],
+          wednesday: timetable.wednesday || [],
+          thursday: timetable.thursday || [],
+          friday: timetable.friday || [],
+          saturday: timetable.saturday || []
+        };
+        
+        setTimetableData(updatedTimetable);
         setConflicts(conflicts);
         
         if (conflicts.length === 0) {
           toast({
             title: "Success",
-            description: "Timetable generated successfully without conflicts!",
+            description: `Timetable for ${selectedClass} generated successfully without conflicts!`,
           });
         } else {
           toast({
@@ -256,10 +292,12 @@ const TimeTableManagement = () => {
       periodDuration: 45,
       periodsPerDay: 8,
       startTime: '08:00',
+      endTime: '16:00', // Added end time
       fixedLunchBreak: true,
       lunchBreakPosition: 'middle',
       maintainTeacherAvailability: true,
-      autoAdjustNewSubjects: true
+      autoAdjustNewSubjects: true,
+      selectedClass: selectedClass // Add selected class
     };
     
     // Add new subject to timetable
@@ -273,12 +311,22 @@ const TimeTableManagement = () => {
         settings
       );
       
-      setTimetableData(timetable);
+      // Create a new object with the same structure as the current timetableData
+      const updatedTimetable: TimetableData = {
+        monday: timetable.monday || [],
+        tuesday: timetable.tuesday || [],
+        wednesday: timetable.wednesday || [],
+        thursday: timetable.thursday || [],
+        friday: timetable.friday || [],
+        saturday: timetable.saturday || []
+      };
+      
+      setTimetableData(updatedTimetable);
       
       if (conflicts.length === 0) {
         toast({
           title: "Subject Added",
-          description: `Successfully added ${newSubject.name} to the timetable.`,
+          description: `Successfully added ${newSubject.name} to the timetable for ${selectedClass}.`,
         });
       } else {
         setConflicts(conflicts);
@@ -465,11 +513,15 @@ const TimeTableManagement = () => {
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Automatic Timetable Generator</DialogTitle>
+            <DialogDescription>
+              Generate a timetable for {selectedClass} based on teacher availability and scheduling constraints.
+            </DialogDescription>
           </DialogHeader>
           <TimeTableGenerator 
             onGenerate={handleGenerateTimetable} 
             isGenerating={isGenerating}
             onCancel={() => setShowGenerator(false)}
+            selectedClass={selectedClass}
           />
         </DialogContent>
       </Dialog>
@@ -649,7 +701,7 @@ const TimeTableManagement = () => {
             <Alert variant="default" className="bg-blue-50 border-blue-200">
               <AlertCircle className="h-4 w-4 text-blue-500" />
               <AlertDescription className="text-blue-800 text-sm">
-                The system will automatically adjust the timetable to include this new subject, respecting teacher availability and avoiding conflicts.
+                The system will automatically adjust the timetable to include this new subject for {selectedClass}, respecting teacher availability and avoiding conflicts.
               </AlertDescription>
             </Alert>
           </div>
