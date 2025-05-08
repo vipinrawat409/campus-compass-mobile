@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, Plus, Edit, Trash2, RefreshCw, Bell, User, AlertCircle, BookOpen } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -12,7 +13,8 @@ import SubstitutionModal from "@/components/timetable/SubstitutionModal";
 import { 
   generateTimetable, 
   checkForConflict, 
-  addNewSubjectToTimetable 
+  addNewSubjectToTimetable,
+  mockSubjects 
 } from "@/utils/timetableUtils";
 import { 
   Table,
@@ -35,8 +37,9 @@ interface TimetableEntry {
   substituteTeacher?: string;
 }
 
-// Define the timetable data structure
+// Define the timetable data structure with index signature
 interface TimetableData {
+  [key: string]: TimetableEntry[]; // Add index signature to allow string indexing
   monday: TimetableEntry[];
   tuesday: TimetableEntry[];
   wednesday: TimetableEntry[];
@@ -71,7 +74,7 @@ const TimeTableManagement = () => {
       { id: 4, time: '10:15 - 11:00', subject: 'Break', teacher: '-', room: '-', class: '10-A' },
       { id: 5, time: '11:00 - 11:45', subject: 'History', teacher: 'Mr. Wilson', room: 'Room 103', class: '10-A' },
       { id: 6, time: '11:45 - 12:30', subject: 'Geography', teacher: 'Mrs. Taylor', room: 'Room 104', class: '10-A' },
-      { id: 7, time: '12:30 - 13:15', subject: 'Lunch', teacher: '-', room: '-', class: '10-A' },
+      { id: 7, time: '12:30 - 13:15', subject: 'Break', teacher: '-', room: '-', class: '10-A' },
       { id: 8, time: '13:15 - 14:00', subject: 'Computer Science', teacher: 'Mr. Brown', room: 'Computer Lab', class: '10-A' },
       { id: 9, time: '14:00 - 14:45', subject: 'Physical Education', teacher: 'Mr. Thomas', room: 'Playground', class: '10-A' }
     ],
@@ -82,7 +85,7 @@ const TimeTableManagement = () => {
       { id: 4, time: '10:15 - 11:00', subject: 'Break', teacher: '-', room: '-', class: '10-A' },
       { id: 5, time: '11:00 - 11:45', subject: 'Art', teacher: 'Ms. Roberts', room: 'Art Room', class: '10-A' },
       { id: 6, time: '11:45 - 12:30', subject: 'Music', teacher: 'Mr. Martin', room: 'Music Room', class: '10-A' },
-      { id: 7, time: '12:30 - 13:15', subject: 'Lunch', teacher: '-', room: '-', class: '10-A' },
+      { id: 7, time: '12:30 - 13:15', subject: 'Break', teacher: '-', room: '-', class: '10-A' },
       { id: 8, time: '13:15 - 14:00', subject: 'Physics', teacher: 'Dr. Lewis', room: 'Lab 2', class: '10-A' },
       { id: 9, time: '14:00 - 14:45', subject: 'Chemistry', teacher: 'Mrs. Clark', room: 'Lab 3', class: '10-A' }
     ],
@@ -108,7 +111,7 @@ const TimeTableManagement = () => {
   
   const currentTimetable = timetableData[selectedDay] || [];
   const filteredTimetable = currentTimetable.filter(period => 
-    period.class === selectedClass || period.subject === 'Break' || period.subject === 'Lunch'
+    period.class === selectedClass || period.subject === 'Break'
   );
 
   const handleGenerateTimetable = (settings) => {
@@ -117,24 +120,20 @@ const TimeTableManagement = () => {
     // Simulate API call delay
     setTimeout(() => {
       try {
+        // Filter selected subjects
+        const selectedSubjects = settings.selectedSubjects
+          ? settings.selectedSubjects.filter(s => s.selected)
+          : [];
+          
         // Generate timetable using our algorithm for the selected class only
         const { timetable, conflicts } = generateTimetable({
           ...settings,
-          selectedClass: selectedClass // Pass the selected class to the generator
+          selectedClass: selectedClass,
+          selectedSubjects: selectedSubjects // Pass selected subjects to the generator
         });
         
         // Update state with new timetable
-        // Create a new object with the same structure as the current timetableData
-        const updatedTimetable: TimetableData = {
-          monday: timetable.monday || [],
-          tuesday: timetable.tuesday || [],
-          wednesday: timetable.wednesday || [],
-          thursday: timetable.thursday || [],
-          friday: timetable.friday || [],
-          saturday: timetable.saturday || []
-        };
-        
-        setTimetableData(updatedTimetable);
+        setTimetableData(timetable as TimetableData);
         setConflicts(conflicts);
         
         if (conflicts.length === 0) {
@@ -256,8 +255,8 @@ const TimeTableManagement = () => {
 
       // Sort periods by time
       updatedPeriods.sort((a, b) => {
-        if (a.subject === 'Break' || a.subject === 'Lunch') return 0;
-        if (b.subject === 'Break' || b.subject === 'Lunch') return 0;
+        if (a.subject === 'Break') return 0;
+        if (b.subject === 'Break') return 0;
         return a.time.localeCompare(b.time);
       });
     }
@@ -293,8 +292,8 @@ const TimeTableManagement = () => {
       periodsPerDay: 8,
       startTime: '08:00',
       endTime: '16:00', // Added end time
-      fixedLunchBreak: true,
-      lunchBreakPosition: 'middle',
+      fixedBreak: true,
+      breakPosition: 'middle',
       maintainTeacherAvailability: true,
       autoAdjustNewSubjects: true,
       selectedClass: selectedClass // Add selected class
@@ -311,17 +310,7 @@ const TimeTableManagement = () => {
         settings
       );
       
-      // Create a new object with the same structure as the current timetableData
-      const updatedTimetable: TimetableData = {
-        monday: timetable.monday || [],
-        tuesday: timetable.tuesday || [],
-        wednesday: timetable.wednesday || [],
-        thursday: timetable.thursday || [],
-        friday: timetable.friday || [],
-        saturday: timetable.saturday || []
-      };
-      
-      setTimetableData(updatedTimetable);
+      setTimetableData(timetable as TimetableData);
       
       if (conflicts.length === 0) {
         toast({
@@ -445,7 +434,7 @@ const TimeTableManagement = () => {
             <TableBody>
               {filteredTimetable.length > 0 ? (
                 filteredTimetable.map((period) => (
-                  <TableRow key={period.id} className={period.subject === 'Break' || period.subject === 'Lunch' ? 'bg-gray-50' : ''}>
+                  <TableRow key={period.id} className={period.subject === 'Break' ? 'bg-gray-50' : ''}>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Clock size={16} className="text-gray-500" />
@@ -469,7 +458,7 @@ const TimeTableManagement = () => {
                     </TableCell>
                     <TableCell>{period.room}</TableCell>
                     <TableCell className="text-right">
-                      {period.subject !== 'Break' && period.subject !== 'Lunch' && (
+                      {period.subject !== 'Break' && (
                         <div className="flex justify-end gap-2">
                           <Button 
                             size="sm" 
@@ -531,7 +520,7 @@ const TimeTableManagement = () => {
         <SubstitutionModal
           isOpen={showSubstitution}
           onClose={() => setShowSubstitution(false)}
-          period={selectedPeriod}
+          period={selectedPeriod as any}
           onConfirm={handleSubstitution}
         />
       )}
@@ -570,15 +559,9 @@ const TimeTableManagement = () => {
                   <SelectValue placeholder="Select subject" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Mathematics">Mathematics</SelectItem>
-                  <SelectItem value="Science">Science</SelectItem>
-                  <SelectItem value="English">English</SelectItem>
-                  <SelectItem value="History">History</SelectItem>
-                  <SelectItem value="Geography">Geography</SelectItem>
-                  <SelectItem value="Computer Science">Computer Science</SelectItem>
-                  <SelectItem value="Physical Education">Physical Education</SelectItem>
-                  <SelectItem value="Art">Art</SelectItem>
-                  <SelectItem value="Music">Music</SelectItem>
+                  {mockSubjects.map(subject => (
+                    <SelectItem key={subject.id} value={subject.name}>{subject.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

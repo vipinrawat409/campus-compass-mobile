@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,8 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, BookOpen } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
+import { mockSubjects } from "@/utils/timetableUtils";
 
 interface TimeTableGeneratorProps {
   onGenerate: (settings: any) => void;
@@ -37,12 +39,13 @@ const TimeTableGenerator: React.FC<TimeTableGeneratorProps> = ({
     detectTeacherConflicts: true,
     detectRoomConflicts: true,
     enableSubstitution: true,
-    fixedLunchBreak: true,
-    lunchBreakPosition: 'middle', // 'middle' or custom position
+    fixedBreak: true,
+    breakPosition: 'middle', // 'middle' or custom position
     maintainTeacherAvailability: true,
     autoAdjustNewSubjects: true,
     smartConflictResolution: true,
-    selectedClass: selectedClass // Added selected class
+    selectedClass: selectedClass, // Added selected class
+    selectedSubjects: [] // New field for selected subjects
   });
   
   const classes = ['7-A', '7-B', '8-A', '8-B', '9-A', '9-B', '10-A', '10-B'];
@@ -50,8 +53,38 @@ const TimeTableGenerator: React.FC<TimeTableGeneratorProps> = ({
   
   const [selectedTab, setSelectedTab] = useState('basic');
   
+  // Initialize selected subjects from mock data
+  useEffect(() => {
+    const initialSubjects = mockSubjects.map(subject => ({
+      id: subject.id,
+      name: subject.name,
+      selected: true,
+      periodsPerWeek: subject.periodsPerWeek
+    }));
+    
+    setSettings(prev => ({ ...prev, selectedSubjects: initialSubjects }));
+  }, []);
+  
   const handleChange = (key: string, value: any) => {
     setSettings(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleSubjectSelection = (subjectId: string, isSelected: boolean) => {
+    setSettings(prev => ({
+      ...prev,
+      selectedSubjects: prev.selectedSubjects.map(subject => 
+        subject.id === subjectId ? { ...subject, selected: isSelected } : subject
+      )
+    }));
+  };
+  
+  const handleSubjectPeriodsChange = (subjectId: string, periodsPerWeek: number) => {
+    setSettings(prev => ({
+      ...prev,
+      selectedSubjects: prev.selectedSubjects.map(subject => 
+        subject.id === subjectId ? { ...subject, periodsPerWeek } : subject
+      )
+    }));
   };
 
   // Calculate and validate end time based on start time, period duration, and number of periods
@@ -86,8 +119,9 @@ const TimeTableGenerator: React.FC<TimeTableGeneratorProps> = ({
   return (
     <div className="space-y-4">
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="basic">Basic Settings</TabsTrigger>
+          <TabsTrigger value="subjects">Subjects</TabsTrigger>
           <TabsTrigger value="advanced">Advanced</TabsTrigger>
           <TabsTrigger value="constraints">Constraints</TabsTrigger>
         </TabsList>
@@ -155,15 +189,15 @@ const TimeTableGenerator: React.FC<TimeTableGeneratorProps> = ({
             
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="fixedLunchBreak">Fixed lunch break position</Label>
+                <Label htmlFor="fixedBreak">Fixed break position</Label>
                 <Switch
-                  id="fixedLunchBreak"
-                  checked={settings.fixedLunchBreak}
-                  onCheckedChange={(checked) => handleChange('fixedLunchBreak', checked)}
+                  id="fixedBreak"
+                  checked={settings.fixedBreak}
+                  onCheckedChange={(checked) => handleChange('fixedBreak', checked)}
                 />
               </div>
               <p className="text-sm text-gray-500">
-                Places lunch break at the middle of the day for all classes
+                Places break at the middle of the day for all classes
               </p>
             </div>
             
@@ -186,6 +220,52 @@ const TimeTableGenerator: React.FC<TimeTableGeneratorProps> = ({
             <p className="text-sm text-blue-800">
               This will generate a timetable for <strong>{selectedClass}</strong> considering teacher availability, subjects, and room constraints.
             </p>
+          </div>
+        </div>
+      )}
+      
+      {selectedTab === 'subjects' && (
+        <div className="space-y-4">
+          <Alert variant="default" className="bg-blue-50 border-blue-200">
+            <BookOpen className="h-4 w-4 text-blue-500" />
+            <AlertDescription className="text-blue-800">
+              Select the subjects to include in the timetable for {selectedClass} and set the number of periods per week for each subject.
+            </AlertDescription>
+          </Alert>
+          
+          <div className="space-y-3">
+            {settings.selectedSubjects.map((subject) => (
+              <Card key={subject.id} className="p-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Checkbox 
+                      id={`subject-${subject.id}`}
+                      checked={subject.selected}
+                      onCheckedChange={(checked) => handleSubjectSelection(subject.id, !!checked)}
+                    />
+                    <Label htmlFor={`subject-${subject.id}`} className="font-medium">
+                      {subject.name}
+                    </Label>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor={`periods-${subject.id}`} className="text-sm mr-2">
+                      Periods/week:
+                    </Label>
+                    <Input
+                      id={`periods-${subject.id}`}
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={subject.periodsPerWeek}
+                      onChange={(e) => handleSubjectPeriodsChange(subject.id, parseInt(e.target.value) || 1)}
+                      className="w-16 h-8"
+                      disabled={!subject.selected}
+                    />
+                  </div>
+                </div>
+              </Card>
+            ))}
           </div>
         </div>
       )}

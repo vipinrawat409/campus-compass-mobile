@@ -43,7 +43,7 @@ type Conflict = {
 };
 
 // Mock data for timetable generation
-const mockSubjects: Subject[] = [
+export const mockSubjects: Subject[] = [
   { id: 's1', name: 'Mathematics', periodsPerWeek: 6 },
   { id: 's2', name: 'Science', periodsPerWeek: 4, requiresSpecialRoom: true },
   { id: 's3', name: 'English', periodsPerWeek: 5 },
@@ -249,18 +249,18 @@ const getTeacherForSubject = (
 const isBreakPeriod = (
   period: number,
   periodsPerDay: number,
-  fixedLunchBreak: boolean,
-  lunchPosition: string
+  fixedBreak: boolean,
+  breakPosition: string
 ): boolean => {
   // Short break after 3rd period
   if (period === 3) {
     return true;
   }
   
-  // Lunch break
-  if (fixedLunchBreak) {
-    if (lunchPosition === 'middle') {
-      // Place lunch break in the middle of the day
+  // Main break
+  if (fixedBreak) {
+    if (breakPosition === 'middle') {
+      // Place break in the middle of the day
       const middlePeriod = Math.floor(periodsPerDay / 2);
       return period === middlePeriod;
     } else {
@@ -315,10 +315,33 @@ export const generateTimetable = (settings: any) => {
   // Get the selected class if provided, otherwise generate for all classes
   const classes = settings.selectedClass ? [settings.selectedClass] : ['10-A', '10-B', '9-A', '9-B', '8-A', '8-B', '7-A', '7-B'];
   
+  // Determine which subjects to include
+  let subjectsToInclude: Subject[] = [];
+  
+  // If there are selected subjects in the settings, use those
+  if (settings.selectedSubjects && settings.selectedSubjects.length > 0) {
+    // Map selected subjects from settings back to proper Subject objects
+    subjectsToInclude = settings.selectedSubjects.map(selected => {
+      // Find the original subject in mockSubjects
+      const originalSubject = mockSubjects.find(s => s.id === selected.id);
+      if (originalSubject) {
+        // Return a new subject with potentially updated periodsPerWeek
+        return {
+          ...originalSubject,
+          periodsPerWeek: selected.periodsPerWeek
+        };
+      }
+      return originalSubject;
+    }).filter(Boolean); // Remove any undefined values
+  } else {
+    // Otherwise use all mock subjects
+    subjectsToInclude = mockSubjects;
+  }
+  
   // For each class, assign subjects
   for (const className of classes) {
     // For each subject that should be taught to this class
-    for (const subject of mockSubjects) {
+    for (const subject of subjectsToInclude) {
       let periodsAssigned = 0;
       
       // Try to assign the required number of periods for this subject
@@ -332,8 +355,8 @@ export const generateTimetable = (settings: any) => {
           
           // Try each period
           for (let period = 0; period < periodsPerDay && !assigned; period++) {
-            // Skip breaks and lunch based on settings
-            if (isBreakPeriod(period, periodsPerDay, settings.fixedLunchBreak, settings.lunchBreakPosition)) {
+            // Skip breaks based on settings
+            if (isBreakPeriod(period, periodsPerDay, settings.fixedBreak, settings.breakPosition)) {
               continue;
             }
             
@@ -429,7 +452,7 @@ export const generateTimetable = (settings: any) => {
     });
   });
   
-  // Add breaks and lunch periods for each class
+  // Add breaks for each class
   classes.forEach(className => {
     days.forEach(day => {
       const classPeriods = timetable[day].filter(period => period.class === className);
@@ -446,7 +469,7 @@ export const generateTimetable = (settings: any) => {
         const breakTime = formatTime(settings.startTime || '08:00', 3, settings.periodDuration || 45);
         
         const breakPeriod = {
-          id: `break-${day}-${className}`,
+          id: `break-${day}-${className}-1`,
           time: breakTime,
           subject: 'Break',
           teacher: '-',
@@ -454,25 +477,25 @@ export const generateTimetable = (settings: any) => {
           class: className
         };
         
-        // Calculate lunch period based on settings
-        const lunchPeriodNumber = settings.fixedLunchBreak && settings.lunchBreakPosition === 'middle' 
+        // Calculate middle break period based on settings
+        const middlePeriodNumber = settings.fixedBreak && settings.breakPosition === 'middle' 
           ? Math.floor(periodsPerDay / 2)
           : 6;
           
-        const lunchTime = formatTime(settings.startTime || '08:00', lunchPeriodNumber, settings.periodDuration || 45);
+        const middleBreakTime = formatTime(settings.startTime || '08:00', middlePeriodNumber, settings.periodDuration || 45);
         
-        const lunchPeriod = {
-          id: `lunch-${day}-${className}`,
-          time: lunchTime,
-          subject: 'Lunch',
+        const middleBreakPeriod = {
+          id: `break-${day}-${className}-2`,
+          time: middleBreakTime,
+          subject: 'Break',
           teacher: '-',
           room: '-',
           class: className
         };
         
-        // Add these breaks to the day's periods
+        // Add breaks to the day's periods
         timetable[day].push(breakPeriod);
-        timetable[day].push(lunchPeriod);
+        timetable[day].push(middleBreakPeriod);
       }
     });
   });
@@ -715,8 +738,8 @@ export const addNewSubjectToTimetable = (
     const day = days[dayIndex];
     
     for (let period = 0; period < periodsPerDay && periodsAssigned < periodsPerWeek; period++) {
-      // Skip breaks and lunch
-      if (isBreakPeriod(period, periodsPerDay, settings.fixedLunchBreak, settings.lunchBreakPosition)) {
+      // Skip breaks
+      if (isBreakPeriod(period, periodsPerDay, settings.fixedBreak, settings.breakPosition)) {
         continue;
       }
       
