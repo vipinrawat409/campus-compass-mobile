@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Users, 
@@ -12,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
+import StudentDashboard from './student/Dashboard';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -291,62 +291,6 @@ const StaffDashboard = () => {
             date="15 May 2025" 
             preview="New salary structure will be effective from next month." 
           />
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const StudentDashboard = () => {
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <DashboardCard 
-          title="Class" 
-          value="10-A" 
-          icon={<GraduationCap className="text-blue-500" />} 
-          bgColor="bg-soft-blue"
-        />
-        <DashboardCard 
-          title="Attendance" 
-          value="95%" 
-          icon={<UserCheck className="text-green-500" />} 
-          bgColor="bg-soft-green"
-        />
-        <DashboardCard 
-          title="Upcoming Exams" 
-          value="3" 
-          icon={<FileText className="text-purple-500" />} 
-          bgColor="bg-soft-purple"
-        />
-      </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card-wrapper">
-          <h2 className="section-title">Today's Timetable</h2>
-          <div className="space-y-2">
-            <TimetableItem time="8:00 - 8:45" subject="Mathematics" teacher="Mr. Johnson" />
-            <TimetableItem time="8:45 - 9:30" subject="Science" teacher="Mrs. Davis" />
-            <TimetableItem time="9:30 - 10:15" subject="English" teacher="Ms. Roberts" />
-            <TimetableItem time="10:15 - 11:00" subject="Break" teacher="" />
-            <TimetableItem time="11:00 - 11:45" subject="History" teacher="Mr. Thompson" />
-          </div>
-        </div>
-        
-        <div className="card-wrapper">
-          <h2 className="section-title">Recent Notices</h2>
-          <div className="space-y-3">
-            <NoticeItem 
-              title="Annual Day Celebration" 
-              date="22 May 2025" 
-              preview="Annual day celebration will be held on 30th May 2025." 
-            />
-            <NoticeItem 
-              title="Exam Schedule" 
-              date="15 May 2025" 
-              preview="Final examination schedule has been released." 
-            />
-          </div>
         </div>
       </div>
     </div>
