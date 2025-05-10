@@ -1,11 +1,51 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Calendar } from '@/components/ui/calendar';
 import FeeNotification from '@/components/student/FeeNotification';
+import StudentFeeHistoryModal from '@/components/modals/StudentFeeHistoryModal';
 
 const StudentDashboard = () => {
   const [date, setDate] = React.useState<Date | undefined>(new Date());
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  
+  // Mock student data
+  const studentData = {
+    name: "John Doe",
+    class: "Grade 10-A"
+  };
+  
+  // Mock fee history
+  const feeHistory = [
+    {
+      id: 1,
+      feeType: "Tuition Fee",
+      amount: 15000,
+      dueDate: "2025-04-15",
+      paidDate: "2025-04-10",
+      status: "Paid"
+    },
+    {
+      id: 2,
+      feeType: "Library Fee",
+      amount: 500,
+      dueDate: "2025-05-15",
+      paidDate: null,
+      status: "Pending"
+    },
+    {
+      id: 3,
+      feeType: "Transport Fee",
+      amount: 2000,
+      dueDate: "2025-04-30",
+      paidDate: "2025-04-28",
+      status: "Paid"
+    }
+  ];
+
+  const openFeeHistory = () => {
+    setIsHistoryModalOpen(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -16,7 +56,14 @@ const StudentDashboard = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-6">
+          {/* Fee notification section */}
           <FeeNotification />
+          
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={openFeeHistory}>
+              View Complete Fee History
+            </Button>
+          </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="dashboard-card bg-soft-blue">
@@ -84,6 +131,14 @@ const StudentDashboard = () => {
           </div>
         </div>
       </div>
+      
+      {/* Fee History Modal */}
+      <StudentFeeHistoryModal 
+        isOpen={isHistoryModalOpen}
+        onClose={() => setIsHistoryModalOpen(false)}
+        student={studentData}
+        feeHistory={feeHistory}
+      />
     </div>
   );
 };
