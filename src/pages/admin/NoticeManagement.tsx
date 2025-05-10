@@ -3,12 +3,15 @@ import React, { useState } from 'react';
 import { Bell, Search, Plus, Calendar, User, Star, Edit, Trash2 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "@/components/ui/sonner";
+import AddNoticeModal, { NoticeData } from '@/components/modals/AddNoticeModal';
 
 const NoticeManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [isAddNoticeModalOpen, setIsAddNoticeModalOpen] = useState(false);
   
   // Mock notices data
-  const noticesData = [
+  const [noticesData, setNoticesData] = useState([
     { 
       id: 1, 
       title: 'Annual Day Celebration', 
@@ -54,7 +57,7 @@ const NoticeManagement = () => {
       target: 'Teachers',
       important: true 
     }
-  ];
+  ]);
   
   // Filter notices based on search term
   const filteredNotices = noticesData.filter(notice => 
@@ -79,6 +82,29 @@ const NoticeManagement = () => {
     }
   };
 
+  const handleAddNotice = (formData: NoticeData) => {
+    const newNotice = {
+      ...formData,
+      id: noticesData.length + 1
+    };
+    
+    setNoticesData([...noticesData, newNotice]);
+    
+    toast("Notice created", {
+      description: "The notice has been successfully created"
+    });
+    
+    setIsAddNoticeModalOpen(false);
+  };
+
+  const handleDeleteNotice = (id: number) => {
+    setNoticesData(noticesData.filter(notice => notice.id !== id));
+    
+    toast("Notice deleted", {
+      description: "The notice has been successfully deleted"
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -97,7 +123,10 @@ const NoticeManagement = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <Button className="flex gap-2">
+          <Button 
+            className="flex gap-2"
+            onClick={() => setIsAddNoticeModalOpen(true)}
+          >
             <Plus size={16} />
             Create Notice
           </Button>
@@ -132,7 +161,12 @@ const NoticeManagement = () => {
                   <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
                     <Edit size={16} />
                   </Button>
-                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-red-500">
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="h-8 w-8 p-0 text-red-500"
+                    onClick={() => handleDeleteNotice(notice.id)}
+                  >
                     <Trash2 size={16} />
                   </Button>
                 </div>
@@ -142,6 +176,12 @@ const NoticeManagement = () => {
           ))}
         </div>
       </div>
+
+      <AddNoticeModal 
+        isOpen={isAddNoticeModalOpen}
+        onClose={() => setIsAddNoticeModalOpen(false)}
+        onSave={handleAddNotice}
+      />
     </div>
   );
 };

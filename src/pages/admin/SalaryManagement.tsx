@@ -3,16 +3,30 @@ import React, { useState } from 'react';
 import { DollarSign, Search, Filter, Download, Plus, Calendar, Check, CreditCard } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "@/components/ui/sonner";
+import AddSalaryModal, { StaffMember, SalaryFormData } from "@/components/modals/AddSalaryModal";
 
 const SalaryManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('May 2025');
+  const [isAddSalaryModalOpen, setIsAddSalaryModalOpen] = useState(false);
   
   // Available months for the dropdown
   const months = ['May 2025', 'April 2025', 'March 2025', 'February 2025', 'January 2025'];
   
+  // Mock staff members data for dropdown
+  const staffMembers: StaffMember[] = [
+    { id: 1, name: 'John Miller', role: 'Senior Teacher', department: 'Mathematics' },
+    { id: 2, name: 'Sarah Johnson', role: 'Teacher', department: 'English' },
+    { id: 3, name: 'Michael Brown', role: 'Teacher', department: 'Science' },
+    { id: 4, name: 'Emily Parker', role: 'Teacher', department: 'Social Studies' },
+    { id: 5, name: 'Robert Wilson', role: 'Administrative Staff', department: 'Admin' },
+    { id: 6, name: 'Lisa Davis', role: 'Teacher', department: 'Art' },
+    { id: 7, name: 'James Martin', role: 'Librarian', department: 'Library' },
+  ];
+  
   // Mock salary data
-  const salaryData = [
+  const [salaryData, setSalaryData] = useState([
     { 
       id: 1, 
       name: 'John Miller', 
@@ -78,7 +92,7 @@ const SalaryManagement = () => {
       status: 'Paid',
       paidOn: '2025-05-01'
     }
-  ];
+  ]);
   
   // Filter salary data based on search term
   const filteredSalaries = salaryData.filter(salary => 
@@ -100,6 +114,41 @@ const SalaryManagement = () => {
       default:
         return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const handleAddSalary = (formData: SalaryFormData) => {
+    const selectedStaff = staffMembers.find(staff => staff.id === formData.staffId);
+    
+    if (!selectedStaff) {
+      toast("Error", {
+        description: "Selected staff not found"
+      });
+      return;
+    }
+    
+    const netSalary = formData.basic + formData.hra + formData.allowances - formData.deductions;
+    
+    const newSalary = {
+      id: salaryData.length + 1,
+      name: selectedStaff.name,
+      role: selectedStaff.role,
+      department: selectedStaff.department,
+      basic: formData.basic,
+      hra: formData.hra,
+      allowances: formData.allowances,
+      deductions: formData.deductions,
+      netSalary: netSalary,
+      status: 'Processing',
+      paidOn: ''
+    };
+    
+    setSalaryData([...salaryData, newSalary]);
+    
+    toast("Salary added", {
+      description: `Salary for ${selectedStaff.name} has been added successfully`
+    });
+    
+    setIsAddSalaryModalOpen(false);
   };
 
   return (
@@ -163,7 +212,10 @@ const SalaryManagement = () => {
                 <Download size={16} />
                 Export
               </Button>
-              <Button className="flex gap-2">
+              <Button 
+                className="flex gap-2"
+                onClick={() => setIsAddSalaryModalOpen(true)}
+              >
                 <Plus size={16} />
                 Add Salary
               </Button>
@@ -212,6 +264,13 @@ const SalaryManagement = () => {
           </table>
         </div>
       </div>
+
+      <AddSalaryModal 
+        isOpen={isAddSalaryModalOpen}
+        onClose={() => setIsAddSalaryModalOpen(false)}
+        onSave={handleAddSalary}
+        staffMembers={staffMembers}
+      />
     </div>
   );
 };

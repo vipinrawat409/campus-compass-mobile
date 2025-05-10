@@ -1,23 +1,48 @@
 
 import React, { useState } from 'react';
-import { DollarSign, Search, Filter, Download, Plus } from 'lucide-react';
+import { DollarSign, Search, Filter, Download, Plus, FileText, User, Users, Calendar } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import { toast } from "@/components/ui/sonner";
+import AddFeeModal, { Student, FeeData } from "@/components/modals/AddFeeModal";
+import StudentFeeHistoryModal from "@/components/modals/StudentFeeHistoryModal";
 
 const FeesManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [isAddFeeModalOpen, setIsAddFeeModalOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<{name: string, class: string} | null>(null);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  
+  // Mock students data
+  const students: Student[] = [
+    { id: 1, name: 'Alice Johnson', class: '10-A' },
+    { id: 2, name: 'Bob Smith', class: '10-A' },
+    { id: 3, name: 'Charlie Brown', class: '9-B' },
+    { id: 4, name: 'David Clark', class: '9-B' },
+    { id: 5, name: 'Emma Davis', class: '8-C' },
+    { id: 6, name: 'Frank Wilson', class: '8-C' },
+    { id: 7, name: 'Grace Taylor', class: '7-A' },
+    { id: 8, name: 'Harry Moore', class: '7-A' },
+  ];
   
   // Mock fee data
-  const feesData = [
-    { id: 1, student: 'Alice Johnson', class: '10-A', feeType: 'Annual Fee', amount: 25000, dueDate: '2025-06-30', status: 'Paid' },
-    { id: 2, student: 'Bob Smith', class: '10-A', feeType: 'Annual Fee', amount: 25000, dueDate: '2025-06-30', status: 'Pending' },
-    { id: 3, student: 'Charlie Brown', class: '9-B', feeType: 'Annual Fee', amount: 22000, dueDate: '2025-06-30', status: 'Partially Paid' },
-    { id: 4, student: 'David Clark', class: '9-B', feeType: 'Transport Fee', amount: 8000, dueDate: '2025-06-15', status: 'Paid' },
-    { id: 5, student: 'Emma Davis', class: '8-C', feeType: 'Annual Fee', amount: 20000, dueDate: '2025-06-30', status: 'Pending' },
-    { id: 6, student: 'Frank Wilson', class: '8-C', feeType: 'Transport Fee', amount: 8000, dueDate: '2025-06-15', status: 'Paid' },
-    { id: 7, student: 'Grace Taylor', class: '7-A', feeType: 'Annual Fee', amount: 18000, dueDate: '2025-06-30', status: 'Pending' },
-    { id: 8, student: 'Harry Moore', class: '7-A', feeType: 'Lab Fee', amount: 5000, dueDate: '2025-06-20', status: 'Paid' }
+  const [feesData, setFeesData] = useState([
+    { id: 1, studentId: 1, student: 'Alice Johnson', class: '10-A', feeType: 'Annual Fee', amount: 25000, dueDate: '2025-06-30', status: 'Paid' },
+    { id: 2, studentId: 2, student: 'Bob Smith', class: '10-A', feeType: 'Annual Fee', amount: 25000, dueDate: '2025-06-30', status: 'Pending' },
+    { id: 3, studentId: 3, student: 'Charlie Brown', class: '9-B', feeType: 'Annual Fee', amount: 22000, dueDate: '2025-06-30', status: 'Partially Paid' },
+    { id: 4, studentId: 4, student: 'David Clark', class: '9-B', feeType: 'Transport Fee', amount: 8000, dueDate: '2025-06-15', status: 'Paid' },
+    { id: 5, studentId: 5, student: 'Emma Davis', class: '8-C', feeType: 'Annual Fee', amount: 20000, dueDate: '2025-06-30', status: 'Pending' },
+    { id: 6, studentId: 6, student: 'Frank Wilson', class: '8-C', feeType: 'Transport Fee', amount: 8000, dueDate: '2025-06-15', status: 'Paid' },
+    { id: 7, studentId: 7, student: 'Grace Taylor', class: '7-A', feeType: 'Annual Fee', amount: 18000, dueDate: '2025-06-30', status: 'Pending' },
+    { id: 8, studentId: 8, student: 'Harry Moore', class: '7-A', feeType: 'Lab Fee', amount: 5000, dueDate: '2025-06-20', status: 'Paid' }
+  ]);
+  
+  // Mock fee history data
+  const feeHistory = [
+    { id: 1, feeType: 'Annual Fee', amount: 25000, dueDate: '2024-06-30', paidDate: '2024-06-25', status: 'Paid' },
+    { id: 2, feeType: 'Transport Fee', amount: 8000, dueDate: '2024-06-15', paidDate: '2024-06-10', status: 'Paid' },
+    { id: 3, feeType: 'Lab Fee', amount: 5000, dueDate: '2024-06-20', paidDate: '2024-06-18', status: 'Paid' },
+    { id: 4, feeType: 'Annual Fee', amount: 25000, dueDate: '2025-06-30', paidDate: null, status: 'Pending' }
   ];
   
   // Filter fees based on search term
@@ -39,6 +64,41 @@ const FeesManagement = () => {
       default:
         return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const handleAddFee = (formData: FeeData) => {
+    const selectedStudent = students.find(student => student.id === formData.studentId);
+    
+    if (!selectedStudent) {
+      toast("Error", {
+        description: "Selected student not found"
+      });
+      return;
+    }
+    
+    const newFee = {
+      id: feesData.length + 1,
+      studentId: formData.studentId,
+      student: selectedStudent.name,
+      class: selectedStudent.class,
+      feeType: formData.feeType,
+      amount: formData.amount,
+      dueDate: formData.dueDate,
+      status: 'Pending'
+    };
+    
+    setFeesData([...feesData, newFee]);
+    
+    toast("Fee added", {
+      description: `${formData.feeType} for ${selectedStudent.name} has been added successfully`
+    });
+    
+    setIsAddFeeModalOpen(false);
+  };
+
+  const viewStudentHistory = (student: string, className: string) => {
+    setSelectedStudent({ name: student, class: className });
+    setIsHistoryModalOpen(true);
   };
 
   return (
@@ -68,7 +128,10 @@ const FeesManagement = () => {
               <Download size={16} />
               Export
             </Button>
-            <Button className="flex gap-2">
+            <Button 
+              className="flex gap-2"
+              onClick={() => setIsAddFeeModalOpen(true)}
+            >
               <Plus size={16} />
               Add Fee
             </Button>
@@ -102,7 +165,13 @@ const FeesManagement = () => {
                     </span>
                   </td>
                   <td className="py-3 px-4">
-                    <Button variant="ghost" size="sm">View</Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => viewStudentHistory(fee.student, fee.class)}
+                    >
+                      View
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -134,6 +203,20 @@ const FeesManagement = () => {
           <p className="dashboard-stat mt-2">₹58,000</p>
         </div>
       </div>
+
+      <AddFeeModal 
+        isOpen={isAddFeeModalOpen}
+        onClose={() => setIsAddFeeModalOpen(false)}
+        onSave={handleAddFee}
+        students={students}
+      />
+
+      <StudentFeeHistoryModal 
+        isOpen={isHistoryModalOpen}
+        onClose={() => setIsHistoryModalOpen(false)}
+        student={selectedStudent}
+        feeHistory={feeHistory}
+      />
     </div>
   );
 };
