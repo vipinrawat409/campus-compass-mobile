@@ -43,6 +43,13 @@ const StudentFeeHistoryModal: React.FC<StudentFeeHistoryModalProps> = ({
     }
   };
 
+  // Calculate total fees and amount paid
+  const totalFees = feeHistory.reduce((sum, item) => sum + item.amount, 0);
+  const paidFees = feeHistory
+    .filter(item => item.status === 'Paid')
+    .reduce((sum, item) => sum + item.amount, 0);
+  const pendingFees = totalFees - paidFees;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-2xl">
@@ -52,6 +59,21 @@ const StudentFeeHistoryModal: React.FC<StudentFeeHistoryModalProps> = ({
         </DialogHeader>
         
         <div className="mt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+            <div className="p-3 rounded-md bg-soft-blue">
+              <p className="text-xs text-gray-600">Total Fees</p>
+              <p className="text-lg font-semibold">₹{totalFees.toLocaleString()}</p>
+            </div>
+            <div className="p-3 rounded-md bg-soft-green">
+              <p className="text-xs text-gray-600">Paid Amount</p>
+              <p className="text-lg font-semibold">₹{paidFees.toLocaleString()}</p>
+            </div>
+            <div className="p-3 rounded-md bg-soft-yellow">
+              <p className="text-xs text-gray-600">Pending Amount</p>
+              <p className="text-lg font-semibold">₹{pendingFees.toLocaleString()}</p>
+            </div>
+          </div>
+          
           {feeHistory.length > 0 ? (
             <Table>
               <TableHeader>

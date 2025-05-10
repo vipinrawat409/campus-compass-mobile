@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import {
   Table,
   TableBody,
@@ -18,6 +18,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
+interface LeaveItem {
+  id: number;
+  type: string;
+  fromDate: string;
+  toDate: string;
+  days: number;
+  reason: string;
+  status: string;
+  appliedOn: string;
+  approvedBy?: string;
+  approvedOn?: string;
+  rejectedReason?: string;
+}
 
 const leaveTypes = [
   { id: 'sick', label: 'Sick Leave' },
@@ -33,6 +47,9 @@ const StaffLeave = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('pending');
   const [showNewLeaveForm, setShowNewLeaveForm] = useState(false);
+  const [showLeaveDetails, setShowLeaveDetails] = useState(false);
+  const [selectedLeave, setSelectedLeave] = useState<LeaveItem | null>(null);
+  
   const [leaveData, setLeaveData] = useState({
     fromDate: '',
     toDate: '',
@@ -41,7 +58,7 @@ const StaffLeave = () => {
     document: null
   });
   
-  const [leaveHistory] = useState([
+  const [leaveHistory] = useState<LeaveItem[]>([
     {
       id: 1,
       type: 'Sick Leave',
@@ -151,6 +168,11 @@ const StaffLeave = () => {
         return 'bg-gray-100 text-gray-800';
     }
   };
+  
+  const handleViewLeaveDetails = (leave: LeaveItem) => {
+    setSelectedLeave(leave);
+    setShowLeaveDetails(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -227,7 +249,13 @@ const StaffLeave = () => {
                           </span>
                         </TableCell>
                         <TableCell>
-                          <Button size="sm" variant="outline">View Details</Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleViewLeaveDetails(leave)}
+                          >
+                            View Details
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))
@@ -245,7 +273,7 @@ const StaffLeave = () => {
         </Tabs>
       </div>
       
-      {/* New Leave Application Dialog - Fixed with max-height and overflow-y-auto */}
+      {/* New Leave Application Dialog */}
       <Dialog open={showNewLeaveForm} onOpenChange={setShowNewLeaveForm}>
         <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -348,6 +376,78 @@ const StaffLeave = () => {
               <Button type="submit">Submit Leave Request</Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Leave Details Dialog */}
+      <Dialog open={showLeaveDetails} onOpenChange={setShowLeaveDetails}>
+        <DialogContent className="sm:max-w-[550px]">
+          <DialogHeader>
+            <DialogTitle>Leave Application Details</DialogTitle>
+          </DialogHeader>
+          
+          {selectedLeave && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="font-medium">{selectedLeave.type}</h3>
+                <span className={`px-2 py-1 text-xs rounded-full ${getStatusBadge(selectedLeave.status)}`}>
+                  {selectedLeave.status.charAt(0).toUpperCase() + selectedLeave.status.slice(1)}
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">From Date</p>
+                  <p className="flex items-center gap-1">
+                    <Calendar size={14} className="text-gray-500" />
+                    {new Date(selectedLeave.fromDate).toLocaleDateString()}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">To Date</p>
+                  <p className="flex items-center gap-1">
+                    <Calendar size={14} className="text-gray-500" />
+                    {new Date(selectedLeave.toDate).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+              
+              <div>
+                <p className="text-sm text-gray-500">Duration</p>
+                <p>{selectedLeave.days} day{selectedLeave.days > 1 ? 's' : ''}</p>
+              </div>
+              
+              <div>
+                <p className="text-sm text-gray-500">Reason</p>
+                <div className="p-3 bg-gray-50 rounded-md mt-1">
+                  <p className="text-sm">{selectedLeave.reason}</p>
+                </div>
+              </div>
+              
+              <div>
+                <p className="text-sm text-gray-500">Applied On</p>
+                <p>{new Date(selectedLeave.appliedOn).toLocaleDateString()}</p>
+              </div>
+              
+              {selectedLeave.status === 'approved' && selectedLeave.approvedBy && (
+                <div className="border-t pt-3">
+                  <p className="text-sm text-gray-500">Approved By</p>
+                  <p>{selectedLeave.approvedBy} on {selectedLeave.approvedOn && new Date(selectedLeave.approvedOn).toLocaleDateString()}</p>
+                </div>
+              )}
+              
+              {selectedLeave.status === 'rejected' && selectedLeave.rejectedReason && (
+                <div className="border-t pt-3">
+                  <p className="text-sm text-gray-500">Rejection Reason</p>
+                  <p className="text-sm text-red-600">{selectedLeave.rejectedReason}</p>
+                </div>
+              )}
+              
+              <div className="flex justify-end mt-6">
+                <Button onClick={() => setShowLeaveDetails(false)}>Close</Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

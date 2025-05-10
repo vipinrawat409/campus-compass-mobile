@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 // Define proper types for our leave applications
 interface BaseLeave {
@@ -42,6 +42,7 @@ const LeaveApproval = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('pending');
   const [searchTerm, setSearchTerm] = useState('');
+  const [leaveData, setLeaveData] = useState<LeaveApplication[]>([]);
   
   // Different mock data based on user role
   const isTeacher = user?.role === 'teacher';
@@ -182,7 +183,10 @@ const LeaveApproval = () => {
     }
   ];
   
-  const leaveData = isTeacher ? teacherLeaveData : adminLeaveData;
+  // Initialize leave data based on user role
+  React.useEffect(() => {
+    setLeaveData(isTeacher ? teacherLeaveData : adminLeaveData);
+  }, [isTeacher]);
 
   // Helper functions to check object types
   const isStudentLeave = (leave: LeaveApplication): leave is StudentLeave => {
@@ -227,12 +231,42 @@ const LeaveApproval = () => {
   
   // Handle leave approval/rejection
   const handleLeaveAction = (leaveId: number, action: 'approve' | 'reject') => {
+    // Update the leave status
+    const updatedLeaves = leaveData.map(leave => {
+      if (leave.id === leaveId) {
+        const now = new Date().toISOString();
+        if (action === 'approve') {
+          if (isStudentLeave(leave)) {
+            return { ...leave, status: 'approved', approvedOn: now };
+          }
+          return { ...leave, status: 'approved' };
+        } else {
+          if (isStudentLeave(leave)) {
+            return { 
+              ...leave, 
+              status: 'rejected', 
+              rejectedOn: now,
+              rejectionReason: 'Rejected by teacher/admin'
+            };
+          }
+          return { ...leave, status: 'rejected' };
+        }
+      }
+      return leave;
+    });
+    
+    setLeaveData(updatedLeaves);
+    
+    // Show toast notification
     toast({
       title: action === 'approve' ? "Leave Approved" : "Leave Rejected",
       description: `The leave application has been ${action === 'approve' ? 'approved' : 'rejected'} successfully.`
     });
     
-    // In a real app, you would update the leave status in the database
+    // If the active tab is 'pending', it should automatically filter out the approved/rejected leaves
+    if (activeTab === 'pending') {
+      // This will re-filter the leaves based on updated status
+    }
   };
 
   return (
