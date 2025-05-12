@@ -16,7 +16,7 @@ const ParentProfile = ({ children }: ParentProfileProps) => {
   const [profile, setProfile] = useState({
     id: 1,
     name: user?.name || "Parent Name",
-    email: user?.email || "parent@example.com",
+    email: user?.username ? `${user.username.toLowerCase()}@school.com` : "parent@example.com", // Using username to create an email
     phone: "+1 (555) 123-4567",
     address: "123 Main St, Anytown, USA",
     bio: "Parent of two children at Valley Public School. Active in PTA and school events.",
