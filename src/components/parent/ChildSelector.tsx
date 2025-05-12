@@ -2,26 +2,33 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
-interface ChildData {
+export interface ChildData {
   id: number;
   name: string;
   class: string;
   rollNo: string;
+  // Additional fields that may be used in different contexts
+  age?: number;
+  dob?: string;
+  gender?: string;
+  bloodGroup?: string;
+  joiningDate?: string;
 }
 
 interface ChildSelectorProps {
   children: ChildData[];
   selectedChild: ChildData;
   onSelectChild: (child: ChildData) => void;
+  className?: string;
 }
 
-const ChildSelector = ({ children, selectedChild, onSelectChild }: ChildSelectorProps) => {
+const ChildSelector = ({ children, selectedChild, onSelectChild, className }: ChildSelectorProps) => {
   if (children.length <= 1) return null;
   
   return (
-    <div className="card-wrapper mb-6">
+    <div className={cn("card-wrapper mb-6", className)}>
       <h2 className="section-title">Select Child</h2>
-      <div className="flex gap-3 overflow-x-auto pb-2">
+      <div className="flex flex-wrap gap-3 overflow-x-auto pb-2">
         {children.map((child) => (
           <button
             key={child.id}

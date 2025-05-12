@@ -1,10 +1,11 @@
 
 import React, { useState } from 'react';
-import { User, Mail, Phone, MapPin, Clock, Check, Calendar, GraduationCap } from 'lucide-react';
+import { User, Mail, Phone, MapPin, GraduationCap } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from '@/contexts/AuthContext';
 import EditProfileModal from '@/components/modals/EditProfileModal';
+import { toast } from '@/components/ui/sonner';
 
 interface ParentProfileProps {
   children?: React.ReactNode;
@@ -13,10 +14,11 @@ interface ParentProfileProps {
 const ParentProfile = ({ children }: ParentProfileProps) => {
   const { user } = useAuth();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [profile, setProfile] = useState({
     id: 1,
     name: user?.name || "Parent Name",
-    email: user?.username ? `${user.username.toLowerCase()}@school.com` : "parent@example.com", // Using username to create an email
+    email: user?.username ? `${user.username.toLowerCase()}@school.com` : "parent@example.com",
     phone: "+1 (555) 123-4567",
     address: "123 Main St, Anytown, USA",
     bio: "Parent of two children at Valley Public School. Active in PTA and school events.",
@@ -52,6 +54,19 @@ const ParentProfile = ({ children }: ParentProfileProps) => {
   
   const handleSaveProfile = (updatedProfile: any) => {
     setProfile(updatedProfile);
+    if (updatedProfile.avatar) {
+      setAvatarUrl(updatedProfile.avatar);
+    }
+    toast("Profile updated successfully");
+  };
+
+  const handleAvatarChange = (file: File) => {
+    const url = URL.createObjectURL(file);
+    setAvatarUrl(url);
+    // In a real app, we would upload the file to a server here
+    const updatedProfile = { ...profile, avatar: url };
+    setProfile(updatedProfile);
+    toast("Profile picture updated");
   };
   
   return (
@@ -61,8 +76,8 @@ const ParentProfile = ({ children }: ParentProfileProps) => {
           <div className="card-wrapper">
             <div className="flex flex-col items-center pb-6">
               <Avatar className="w-24 h-24 mb-4">
-                {profile.avatar ? (
-                  <AvatarImage src={profile.avatar} />
+                {avatarUrl || profile.avatar ? (
+                  <AvatarImage src={avatarUrl || profile.avatar} alt={profile.name} />
                 ) : (
                   <AvatarFallback className="text-lg bg-primary text-white">
                     {profile.name.charAt(0)}
@@ -71,14 +86,31 @@ const ParentProfile = ({ children }: ParentProfileProps) => {
               </Avatar>
               <h2 className="text-xl font-bold">{profile.name}</h2>
               <p className="text-gray-500 capitalize">{profile.role}</p>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="mt-4"
-                onClick={() => setIsEditModalOpen(true)}
-              >
-                Edit Profile
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                <label htmlFor="avatar-upload" className="cursor-pointer">
+                  <Button variant="outline" size="sm" className="w-full">
+                    Change Photo
+                  </Button>
+                  <input
+                    id="avatar-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        handleAvatarChange(e.target.files[0]);
+                      }
+                    }}
+                  />
+                </label>
+                <Button 
+                  variant="default" 
+                  size="sm"
+                  onClick={() => setIsEditModalOpen(true)}
+                >
+                  Edit Profile
+                </Button>
+              </div>
             </div>
             
             <div className="border-t pt-6 space-y-4">

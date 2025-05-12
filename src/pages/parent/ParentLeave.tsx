@@ -1,21 +1,21 @@
 
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Plus, Calendar, FileText, ChevronDown } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Calendar, FileText } from 'lucide-react';
 import ApplyLeaveModal from '@/components/modals/ApplyLeaveModal';
 import { toast } from "@/components/ui/sonner";
+import ChildSelector, { ChildData } from '@/components/parent/ChildSelector';
 
 const ParentLeave = () => {
   const [isApplyLeaveModalOpen, setIsApplyLeaveModalOpen] = useState(false);
   
   // Mock children data
   const children = [
-    { id: 1, name: "Sarah Wilson", class: "10-A" },
-    { id: 2, name: "John Wilson", class: "7-B" }
+    { id: 1, name: "Sarah Wilson", class: "10-A", rollNo: "SD201" },
+    { id: 2, name: "John Wilson", class: "7-B", rollNo: "SD202" }
   ];
   
-  const [selectedChild, setSelectedChild] = useState(children[0]);
+  const [selectedChild, setSelectedChild] = useState<ChildData>(children[0]);
   
   // Mock leave data
   const [leaves, setLeaves] = useState([
@@ -51,6 +51,7 @@ const ParentLeave = () => {
     };
     
     setLeaves([...leaves, newLeave]);
+    toast("Leave application submitted successfully");
   };
   
   // Filter leaves for the selected child
@@ -74,36 +75,20 @@ const ParentLeave = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold">Leave Management</h1>
-        <div className="flex flex-col sm:flex-row gap-3">
-          {children.length > 1 && (
-            <Select
-              value={selectedChild.id.toString()}
-              onValueChange={(value) => {
-                const child = children.find(c => c.id.toString() === value);
-                if (child) setSelectedChild(child);
-              }}
-            >
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Select child" />
-              </SelectTrigger>
-              <SelectContent>
-                {children.map((child) => (
-                  <SelectItem key={child.id} value={child.id.toString()}>
-                    {child.name} ({child.class})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-          <Button 
-            onClick={() => setIsApplyLeaveModalOpen(true)}
-            className="flex gap-2"
-          >
-            <Plus size={16} />
-            Apply for Leave
-          </Button>
-        </div>
+        <Button 
+          onClick={() => setIsApplyLeaveModalOpen(true)}
+          className="flex gap-2"
+        >
+          <Plus size={16} />
+          Apply for Leave
+        </Button>
       </div>
+      
+      <ChildSelector 
+        children={children} 
+        selectedChild={selectedChild}
+        onSelectChild={setSelectedChild}
+      />
       
       <div className="card-wrapper">
         <h2 className="text-lg font-medium mb-4">
@@ -161,6 +146,7 @@ const ParentLeave = () => {
         isOpen={isApplyLeaveModalOpen}
         onClose={() => setIsApplyLeaveModalOpen(false)}
         onSubmit={handleApplyLeave}
+        childName={selectedChild.name}
       />
     </div>
   );
