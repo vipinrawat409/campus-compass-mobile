@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { FileCheck, Search, Filter, Calendar, User, Check, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -260,9 +259,7 @@ const LeaveApproval = () => {
     setLeaveData(updatedLeaves);
     
     // Show toast notification
-    toast({
-      description: `The leave application has been ${action === 'approve' ? 'approved' : 'rejected'} successfully.`
-    });
+    toast(`The leave application has been ${action === 'approve' ? 'approved' : 'rejected'} successfully.`);
     
     // Close the modal if it's open
     setIsLeaveDetailsModalOpen(false);
