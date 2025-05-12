@@ -12,6 +12,8 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import StudentDashboard from './student/Dashboard';
+import InstituteDetailsModal from '@/components/modals/InstituteDetailsModal';
+import { toast } from "@/components/ui/sonner";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -52,11 +54,56 @@ const Dashboard = () => {
 
 // Role-specific dashboard components
 const SuperAdminDashboard = () => {
+  const [selectedInstitute, setSelectedInstitute] = useState<any>(null);
+  const [showInstituteDetails, setShowInstituteDetails] = useState(false);
+  
+  // Mock institute data with more details
   const institutes = [
-    { id: 1, name: "Valley Public School", location: "New York", students: 1250 },
-    { id: 2, name: "Greenwood Academy", location: "Chicago", students: 950 },
-    { id: 3, name: "Sunshine Elementary", location: "San Francisco", students: 680 }
+    { 
+      id: 1, 
+      name: "Valley Public School", 
+      location: "New York", 
+      students: 1250,
+      teachers: 48,
+      staff: 22,
+      address: "123 Education Ave, New York, NY 10001",
+      phone: "+1 (555) 123-4567",
+      email: "info@valleypublic.edu",
+      foundedYear: 1985,
+      principal: "Dr. Michael Johnson" 
+    },
+    { 
+      id: 2, 
+      name: "Greenwood Academy", 
+      location: "Chicago", 
+      students: 950,
+      teachers: 35,
+      staff: 18,
+      address: "456 Learning Lane, Chicago, IL 60601",
+      phone: "+1 (555) 987-6543",
+      email: "contact@greenwoodacademy.org",
+      foundedYear: 1998,
+      principal: "Mrs. Sarah Williams"
+    },
+    { 
+      id: 3, 
+      name: "Sunshine Elementary", 
+      location: "San Francisco", 
+      students: 680,
+      teachers: 28,
+      staff: 14,
+      address: "789 Knowledge St, San Francisco, CA 94105",
+      phone: "+1 (555) 456-7890",
+      email: "office@sunshineelementary.edu",
+      foundedYear: 2005,
+      principal: "Mr. Robert Chen"
+    }
   ];
+
+  const handleViewDetails = (institute: any) => {
+    setSelectedInstitute(institute);
+    setShowInstituteDetails(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -106,7 +153,10 @@ const SuperAdminDashboard = () => {
                   <td className="py-3 px-4">{institute.location}</td>
                   <td className="py-3 px-4">{institute.students}</td>
                   <td className="py-3 px-4">
-                    <button className="text-sm text-primary hover:text-primary/80">
+                    <button 
+                      className="text-sm text-primary hover:text-primary/80"
+                      onClick={() => handleViewDetails(institute)}
+                    >
                       View Details
                     </button>
                   </td>
@@ -116,6 +166,15 @@ const SuperAdminDashboard = () => {
           </table>
         </div>
       </div>
+      
+      {/* Institute Details Modal */}
+      {selectedInstitute && (
+        <InstituteDetailsModal 
+          isOpen={showInstituteDetails}
+          onClose={() => setShowInstituteDetails(false)}
+          institute={selectedInstitute}
+        />
+      )}
     </div>
   );
 };
