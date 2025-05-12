@@ -1,21 +1,23 @@
 
-import React, { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import React from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { 
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage 
+} from "@/components/ui/form";
 import { Switch } from "@/components/ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "@/components/ui/sonner";
 
-interface NoticeData {
+export interface NoticeData {
   id: number;
   title: string;
   content: string;
@@ -23,147 +25,179 @@ interface NoticeData {
   author: string;
   target: string;
   important: boolean;
-  attachment?: boolean;
 }
 
 interface EditNoticeModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSave: (formData: NoticeData) => void;
   notice: NoticeData | null;
-  onSave: (notice: NoticeData) => void;
 }
 
-const EditNoticeModal = ({
-  isOpen,
-  onClose,
-  notice,
-  onSave
-}: EditNoticeModalProps) => {
-  const [formData, setFormData] = useState<NoticeData | null>(notice);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+const EditNoticeModal = ({ isOpen, onClose, onSave, notice }: EditNoticeModalProps) => {
+  const formSchema = z.object({
+    title: z.string().min(1, "Title is required"),
+    content: z.string().min(1, "Content is required"),
+    date: z.string(),
+    author: z.string().min(1, "Author is required"),
+    target: z.string().min(1, "Target audience is required"),
+    important: z.boolean().default(false),
+  });
 
-  // Reset form when notice changes
-  useEffect(() => {
-    setFormData(notice);
-  }, [notice]);
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      title: notice?.title || "",
+      content: notice?.content || "",
+      date: notice?.date || new Date().toISOString().split('T')[0],
+      author: notice?.author || "",
+      target: notice?.target || "All",
+      important: notice?.important || false,
+    },
+  });
 
-  if (!formData) {
-    return null;
-  }
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => prev ? { ...prev, [name]: value } : null);
-  };
-
-  const handleSwitchChange = (checked: boolean) => {
-    setFormData(prev => prev ? { ...prev, important: checked } : null);
-  };
-
-  const handleTargetChange = (value: string) => {
-    setFormData(prev => prev ? { ...prev, target: value } : null);
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData) return;
-    
-    setIsSubmitting(true);
-    
-    // Simulate API call delay
-    setTimeout(() => {
-      onSave(formData);
-      setIsSubmitting(false);
-      onClose();
-      
-      toast("Notice updated", {
-        description: "The notice has been updated successfully"
+  // Update the form when the notice changes
+  React.useEffect(() => {
+    if (notice) {
+      form.reset({
+        title: notice.title,
+        content: notice.content,
+        date: notice.date,
+        author: notice.author,
+        target: notice.target,
+        important: notice.important,
       });
-    }, 500);
+    }
+  }, [notice, form]);
+
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
+    if (!notice) return;
+    
+    const updatedNotice: NoticeData = {
+      ...notice,
+      ...values,
+    };
+    
+    onSave(updatedNotice);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Edit Notice</DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="title">Title</Label>
-            <Input 
-              id="title" 
-              name="title" 
-              value={formData.title} 
-              onChange={handleChange} 
-              required 
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Title</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="content">Content</Label>
-            <Textarea 
-              id="content" 
-              name="content" 
-              value={formData.content} 
-              onChange={handleChange} 
-              required 
-              className="min-h-[150px]"
-            />
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="target">Target Audience</Label>
-              <Select 
-                value={formData.target} 
-                onValueChange={handleTargetChange}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select target audience" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="All">All</SelectItem>
-                  <SelectItem value="Students">Students</SelectItem>
-                  <SelectItem value="Parents">Parents</SelectItem>
-                  <SelectItem value="Teachers">Teachers</SelectItem>
-                  <SelectItem value="Staff">Staff</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="date">Date</Label>
-              <Input 
-                id="date" 
-                name="date" 
-                type="date" 
-                value={formData.date} 
-                onChange={handleChange} 
-                required 
+            <FormField
+              control={form.control}
+              name="content"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Content</FormLabel>
+                  <FormControl>
+                    <Textarea rows={5} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="author"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Author</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <Switch 
-              id="important" 
-              checked={formData.important} 
-              onCheckedChange={handleSwitchChange} 
+            
+            <FormField
+              control={form.control}
+              name="target"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Target Audience</FormLabel>
+                  <FormControl>
+                    <select
+                      className="w-full border border-gray-300 rounded-md p-2"
+                      {...field}
+                    >
+                      <option value="All">All</option>
+                      <option value="Students">Students</option>
+                      <option value="Teachers">Teachers</option>
+                      <option value="Parents">Parents</option>
+                    </select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
-            <Label htmlFor="important">Mark as Important</Label>
-          </div>
-          
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Saving...' : 'Save Changes'}
-            </Button>
-          </DialogFooter>
-        </form>
+            
+            <FormField
+              control={form.control}
+              name="important"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                  <div className="space-y-0.5">
+                    <FormLabel className="text-base">Mark as Important</FormLabel>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button type="submit">
+                Update Notice
+              </Button>
+            </div>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

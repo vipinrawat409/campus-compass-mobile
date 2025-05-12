@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import * as LabelPrimitive from "@radix-ui/react-label"
 import { Slot } from "@radix-ui/react-slot"
@@ -86,8 +87,10 @@ FormItem.displayName = "FormItem"
 
 const FormLabel = React.forwardRef<
   React.ElementRef<typeof LabelPrimitive.Root>,
-  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>
->(({ className, ...props }, ref) => {
+  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> & {
+    optional?: boolean;
+  }
+>(({ className, optional, children, ...props }, ref) => {
   const { error, formItemId } = useFormField()
 
   return (
@@ -96,7 +99,10 @@ const FormLabel = React.forwardRef<
       className={cn(error && "text-destructive", className)}
       htmlFor={formItemId}
       {...props}
-    />
+    >
+      {children}
+      {optional && <span className="text-gray-500 text-xs font-normal ml-1">(Optional)</span>}
+    </Label>
   )
 })
 FormLabel.displayName = "FormLabel"
@@ -164,6 +170,104 @@ const FormMessage = React.forwardRef<
 })
 FormMessage.displayName = "FormMessage"
 
+// New component for file upload with preview
+const FormFileUpload = React.forwardRef<
+  HTMLDivElement,
+  React.InputHTMLAttributes<HTMLInputElement> & {
+    label: string;
+    description?: string;
+    preview?: string | null;
+    onFileChange: (file: File | null) => void;
+    accept?: string;
+    error?: string;
+  }
+>(({ label, description, preview, onFileChange, accept = "image/*", error, ...props }, ref) => {
+  const [previewUrl, setPreviewUrl] = useState<string | null>(preview || null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files ? e.target.files[0] : null;
+    
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      onFileChange(file);
+    } else {
+      setPreviewUrl(null);
+      onFileChange(null);
+    }
+  };
+  
+  const handleRemoveFile = () => {
+    setPreviewUrl(null);
+    onFileChange(null);
+    
+    // Reset the file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+  
+  React.useEffect(() => {
+    // Update preview when prop changes
+    setPreviewUrl(preview);
+  }, [preview]);
+  
+  return (
+    <div ref={ref as React.Ref<HTMLDivElement>} className="space-y-2">
+      <Label>{label}</Label>
+      
+      {description && (
+        <p className="text-sm text-muted-foreground">{description}</p>
+      )}
+      
+      <div className="flex flex-col gap-4">
+        {previewUrl && (
+          <div className="relative w-32 h-32 overflow-hidden rounded-md border">
+            <img 
+              src={previewUrl} 
+              alt="Preview" 
+              className="w-full h-full object-cover"
+            />
+            <button
+              type="button"
+              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 w-6 h-6 flex items-center justify-center shadow-sm"
+              onClick={handleRemoveFile}
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+        
+        <div className="flex flex-col gap-2">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept={accept}
+            className="hidden"
+            id="file-upload"
+            {...props}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            className="w-fit"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {previewUrl ? 'Change File' : 'Upload File'}
+          </Button>
+          
+          {error && (
+            <p className="text-sm font-medium text-destructive">{error}</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+});
+FormFileUpload.displayName = "FormFileUpload";
+
 export {
   useFormField,
   Form,
@@ -173,4 +277,5 @@ export {
   FormDescription,
   FormMessage,
   FormField,
+  FormFileUpload
 }

@@ -1,165 +1,165 @@
 
-import React, { useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import React from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Calendar, User, Clock, FileText } from 'lucide-react';
-import { toast } from "@/components/ui/sonner";
-
-interface LeaveData {
-  id: number;
-  name: string;
-  role: string;
-  date: string;
-  reason: string;
-  status: string;
-  document?: string;
-  appliedOn?: string;
-}
+import { Calendar, User, Check, X } from 'lucide-react';
 
 interface LeaveDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  leave: LeaveData | null;
+  leave: any;
   onApprove: (id: number) => void;
   onReject: (id: number) => void;
 }
 
-const LeaveDetailsModal = ({
-  isOpen,
-  onClose,
-  leave,
-  onApprove,
-  onReject
-}: LeaveDetailsModalProps) => {
-  const [status, setStatus] = useState<string | null>(null);
-
-  if (!leave) {
-    return null;
-  }
-
-  const currentStatus = status || leave.status;
-
-  const handleApprove = () => {
-    setStatus('Approved');
-    onApprove(leave.id);
-    toast("Leave approved", {
-      description: "The leave application has been approved"
-    });
+const LeaveDetailsModal = ({ isOpen, onClose, leave, onApprove, onReject }: LeaveDetailsModalProps) => {
+  if (!leave) return null;
+  
+  // Helper functions to check object types
+  const isStudentLeave = (leave: any): boolean => {
+    return 'class' in leave && 'rollNo' in leave;
   };
 
-  const handleReject = () => {
-    setStatus('Rejected');
-    onReject(leave.id);
-    toast("Leave rejected", {
-      description: "The leave application has been rejected"
-    });
+  const isStaffTeacherLeave = (leave: any): boolean => {
+    return ('subject' in leave || 'department' in leave) && !('class' in leave);
   };
-
+  
+  // Function to get status badge color
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'approved':
+        return 'bg-green-100 text-green-800';
+      case 'rejected':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+  
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Leave Application Details</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-6 py-4">
-          <div className="flex flex-col sm:flex-row justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-bold">{leave.name}</h2>
-              <div className="text-sm text-gray-500">{leave.role}</div>
-            </div>
-            
-            <div className={`px-3 py-1 h-fit rounded-full text-sm font-medium ${
-              currentStatus === 'Approved' 
-                ? 'bg-green-100 text-green-800' 
-                : currentStatus === 'Rejected'
-                  ? 'bg-red-100 text-red-800'
-                  : 'bg-yellow-100 text-yellow-800'
-            }`}>
-              {currentStatus}
-            </div>
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-semibold">{leave.name}</h3>
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(leave.status)}`}>
+              {leave.status.charAt(0).toUpperCase() + leave.status.slice(1)}
+            </span>
           </div>
           
-          <div className="space-y-4">
-            <div className="flex items-start gap-3">
-              <Calendar className="h-5 w-5 text-gray-500 mt-0.5" />
+          <div className="border-t pt-4">
+            <div className="grid grid-cols-2 gap-y-3">
               <div>
-                <p className="text-sm font-medium">Leave Duration</p>
-                <p className="text-gray-700">{leave.date}</p>
+                <p className="text-sm text-gray-500">Role</p>
+                <p className="font-medium">{leave.role}</p>
               </div>
+              
+              {isStaffTeacherLeave(leave) && leave.subject && (
+                <div>
+                  <p className="text-sm text-gray-500">Subject</p>
+                  <p className="font-medium">{leave.subject}</p>
+                </div>
+              )}
+              
+              {isStaffTeacherLeave(leave) && leave.department && (
+                <div>
+                  <p className="text-sm text-gray-500">Department</p>
+                  <p className="font-medium">{leave.department}</p>
+                </div>
+              )}
+              
+              {isStudentLeave(leave) && (
+                <>
+                  <div>
+                    <p className="text-sm text-gray-500">Class</p>
+                    <p className="font-medium">{leave.class}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Roll No</p>
+                    <p className="font-medium">{leave.rollNo}</p>
+                  </div>
+                </>
+              )}
+              
+              <div>
+                <p className="text-sm text-gray-500">Leave Type</p>
+                <p className="font-medium">{leave.leaveType}</p>
+              </div>
+              
+              <div>
+                <p className="text-sm text-gray-500">Duration</p>
+                <p className="font-medium">{leave.days} days</p>
+              </div>
+              
+              <div className="col-span-2">
+                <p className="text-sm text-gray-500">Period</p>
+                <div className="flex items-center gap-1">
+                  <Calendar size={14} className="text-gray-500" />
+                  <p className="font-medium">
+                    {new Date(leave.fromDate).toLocaleDateString()} to {new Date(leave.toDate).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="col-span-2">
+                <p className="text-sm text-gray-500">Applied On</p>
+                <div className="flex items-center gap-1">
+                  <Calendar size={14} className="text-gray-500" />
+                  <p className="font-medium">{new Date(leave.appliedOn).toLocaleDateString()}</p>
+                </div>
+              </div>
+              
+              {isStudentLeave(leave) && leave.appliedBy && (
+                <div className="col-span-2">
+                  <p className="text-sm text-gray-500">Applied By</p>
+                  <div className="flex items-center gap-1">
+                    <User size={14} className="text-gray-500" />
+                    <p className="font-medium">{leave.appliedBy}</p>
+                  </div>
+                </div>
+              )}
             </div>
             
-            {leave.appliedOn && (
-              <div className="flex items-start gap-3">
-                <Clock className="h-5 w-5 text-gray-500 mt-0.5" />
-                <div>
-                  <p className="text-sm font-medium">Applied On</p>
-                  <p className="text-gray-700">{leave.appliedOn}</p>
-                </div>
+            <div className="border-t pt-3 mt-3">
+              <p className="text-sm text-gray-500">Reason</p>
+              <p className="font-medium">{leave.reason}</p>
+            </div>
+            
+            {leave.status === 'rejected' && leave.rejectionReason && (
+              <div className="border-t pt-3 mt-3">
+                <p className="text-sm text-gray-500">Rejection Reason</p>
+                <p className="font-medium text-red-600">{leave.rejectionReason}</p>
               </div>
             )}
-            
-            <div className="flex items-start gap-3">
-              <FileText className="h-5 w-5 text-gray-500 mt-0.5" />
-              <div>
-                <p className="text-sm font-medium">Reason</p>
-                <p className="text-gray-700">{leave.reason}</p>
-              </div>
-            </div>
           </div>
           
-          {leave.document && (
-            <div className="mt-4 pt-4 border-t">
-              <h3 className="text-sm font-medium mb-3">Attached Documents</h3>
-              <div className="p-3 bg-gray-50 rounded-lg border">
-                <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 bg-blue-500 rounded flex items-center justify-center text-white text-xs font-medium">
-                    PDF
-                  </div>
-                  <div className="flex-1 overflow-hidden">
-                    <p className="text-sm font-medium truncate">{leave.document}</p>
-                    <p className="text-xs text-gray-500">Uploaded on {leave.appliedOn || 'today'}</p>
-                  </div>
-                  <Button variant="outline" size="sm">View</Button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-        
-        <DialogFooter className="flex flex-col sm:flex-row gap-2 sm:justify-between sm:items-center">
-          {currentStatus === 'Pending' && (
-            <div className="flex gap-2 w-full sm:w-auto">
+          {leave.status === 'pending' && (
+            <div className="flex gap-4 justify-end">
               <Button 
-                variant="default"
-                className="flex-1 sm:flex-none"
-                onClick={handleApprove}
+                variant="default" 
+                className="bg-green-600 hover:bg-green-700 flex gap-1"
+                onClick={() => onApprove(leave.id)}
               >
+                <Check size={16} />
                 Approve
               </Button>
               <Button 
-                variant="destructive"
-                className="flex-1 sm:flex-none"
-                onClick={handleReject}
+                variant="outline" 
+                className="text-red-600 flex gap-1"
+                onClick={() => onReject(leave.id)}
               >
+                <X size={16} />
                 Reject
               </Button>
             </div>
           )}
-          <Button 
-            variant="outline" 
-            className="w-full sm:w-auto" 
-            onClick={onClose}
-          >
-            Close
-          </Button>
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

@@ -5,11 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/sonner";
 import AddSalaryModal, { StaffMember, SalaryFormData } from "@/components/modals/AddSalaryModal";
+import SalaryDetailsModal from "@/components/modals/SalaryDetailsModal";
 
 const SalaryManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('May 2025');
   const [isAddSalaryModalOpen, setIsAddSalaryModalOpen] = useState(false);
+  const [isSalaryDetailsModalOpen, setIsSalaryDetailsModalOpen] = useState(false);
+  const [selectedSalary, setSelectedSalary] = useState<any>(null);
   
   // Available months for the dropdown
   const months = ['May 2025', 'April 2025', 'March 2025', 'February 2025', 'January 2025'];
@@ -151,6 +154,56 @@ const SalaryManagement = () => {
     setIsAddSalaryModalOpen(false);
   };
 
+  const viewSalaryDetails = (salary: any) => {
+    setSelectedSalary(salary);
+    setIsSalaryDetailsModalOpen(true);
+  };
+
+  const handleSalaryStatusChange = (id: number, newStatus: string) => {
+    setSalaryData(prevData => 
+      prevData.map(salary => {
+        if (salary.id === id) {
+          const updatedSalary = {
+            ...salary,
+            status: newStatus,
+            paidOn: newStatus === 'Paid' ? new Date().toISOString().split('T')[0] : salary.paidOn
+          };
+          
+          // Also update the selected salary if it's currently being viewed
+          if (selectedSalary && selectedSalary.id === id) {
+            setSelectedSalary(updatedSalary);
+          }
+          
+          return updatedSalary;
+        }
+        return salary;
+      })
+    );
+  };
+
+  const handleSalaryUpdate = (id: number, updatedData: any) => {
+    setSalaryData(prevData => 
+      prevData.map(salary => {
+        if (salary.id === id) {
+          // Also update the selected salary if it's currently being viewed
+          if (selectedSalary && selectedSalary.id === id) {
+            setSelectedSalary(updatedData);
+          }
+          
+          return updatedData;
+        }
+        return salary;
+      })
+    );
+  };
+
+  // Calculate stats
+  const totalSalaryBudget = salaryData.reduce((total, item) => total + item.netSalary, 0);
+  const salariesPaid = salaryData
+    .filter(item => item.status === 'Paid')
+    .reduce((total, item) => total + item.netSalary, 0);
+  const pendingPayments = totalSalaryBudget - salariesPaid;
+
   return (
     <div className="space-y-6">
       <div>
@@ -164,21 +217,21 @@ const SalaryManagement = () => {
             <p className="dashboard-label">Total Salary Budget</p>
             <DollarSign className="text-blue-500" />
           </div>
-          <p className="dashboard-stat mt-2">₹2,68,800</p>
+          <p className="dashboard-stat mt-2">₹{totalSalaryBudget.toLocaleString()}</p>
         </div>
         <div className="dashboard-card bg-soft-green">
           <div className="flex justify-between items-center">
             <p className="dashboard-label">Salaries Paid</p>
             <Check className="text-green-500" />
           </div>
-          <p className="dashboard-stat mt-2">₹1,60,500</p>
+          <p className="dashboard-stat mt-2">₹{salariesPaid.toLocaleString()}</p>
         </div>
         <div className="dashboard-card bg-soft-yellow">
           <div className="flex justify-between items-center">
             <p className="dashboard-label">Pending Payments</p>
             <CreditCard className="text-yellow-500" />
           </div>
-          <p className="dashboard-stat mt-2">₹1,08,300</p>
+          <p className="dashboard-stat mt-2">₹{pendingPayments.toLocaleString()}</p>
         </div>
       </div>
 
@@ -256,7 +309,13 @@ const SalaryManagement = () => {
                     </span>
                   </td>
                   <td className="py-3 px-4">
-                    <Button variant="ghost" size="sm">View</Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => viewSalaryDetails(salary)}
+                    >
+                      View
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -270,6 +329,14 @@ const SalaryManagement = () => {
         onClose={() => setIsAddSalaryModalOpen(false)}
         onSave={handleAddSalary}
         staffMembers={staffMembers}
+      />
+
+      <SalaryDetailsModal
+        isOpen={isSalaryDetailsModalOpen}
+        onClose={() => setIsSalaryDetailsModalOpen(false)}
+        salaryData={selectedSalary}
+        onStatusChange={handleSalaryStatusChange}
+        onSalaryUpdate={handleSalaryUpdate}
       />
     </div>
   );

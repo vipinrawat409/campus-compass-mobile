@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/sonner";
+import LeaveDetailsModal from '@/components/modals/LeaveDetailsModal';
 
 // Define proper types for our leave applications
 interface BaseLeave {
@@ -38,11 +39,12 @@ interface StudentLeave extends BaseLeave {
 type LeaveApplication = StaffTeacherLeave | StudentLeave;
 
 const LeaveApproval = () => {
-  const { toast } = useToast();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('pending');
   const [searchTerm, setSearchTerm] = useState('');
   const [leaveData, setLeaveData] = useState<LeaveApplication[]>([]);
+  const [isLeaveDetailsModalOpen, setIsLeaveDetailsModalOpen] = useState(false);
+  const [selectedLeave, setSelectedLeave] = useState<LeaveApplication | null>(null);
   
   // Different mock data based on user role
   const isTeacher = user?.role === 'teacher';
@@ -263,10 +265,13 @@ const LeaveApproval = () => {
       description: `The leave application has been ${action === 'approve' ? 'approved' : 'rejected'} successfully.`
     });
     
-    // If the active tab is 'pending', it should automatically filter out the approved/rejected leaves
-    if (activeTab === 'pending') {
-      // This will re-filter the leaves based on updated status
-    }
+    // Close the modal if it's open
+    setIsLeaveDetailsModalOpen(false);
+  };
+
+  const viewLeaveDetails = (leave: LeaveApplication) => {
+    setSelectedLeave(leave);
+    setIsLeaveDetailsModalOpen(true);
   };
 
   return (
@@ -370,8 +375,17 @@ const LeaveApproval = () => {
                         )}
                       </div>
                     </div>
-                    <div className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(leave.status)}`}>
-                      {leave.status.charAt(0).toUpperCase() + leave.status.slice(1)}
+                    <div className="flex items-center gap-3">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(leave.status)}`}>
+                        {leave.status.charAt(0).toUpperCase() + leave.status.slice(1)}
+                      </span>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => viewLeaveDetails(leave)}
+                      >
+                        View Details
+                      </Button>
                     </div>
                   </div>
                   
@@ -411,6 +425,14 @@ const LeaveApproval = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      <LeaveDetailsModal
+        isOpen={isLeaveDetailsModalOpen}
+        onClose={() => setIsLeaveDetailsModalOpen(false)}
+        leave={selectedLeave}
+        onApprove={(id) => handleLeaveAction(id, 'approve')}
+        onReject={(id) => handleLeaveAction(id, 'reject')}
+      />
     </div>
   );
 };

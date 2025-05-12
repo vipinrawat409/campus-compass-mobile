@@ -5,10 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/sonner";
 import AddNoticeModal, { NoticeData } from '@/components/modals/AddNoticeModal';
+import EditNoticeModal from '@/components/modals/EditNoticeModal';
 
 const NoticeManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddNoticeModalOpen, setIsAddNoticeModalOpen] = useState(false);
+  const [isEditNoticeModalOpen, setIsEditNoticeModalOpen] = useState(false);
+  const [selectedNotice, setSelectedNotice] = useState<NoticeData | null>(null);
   
   // Mock notices data
   const [noticesData, setNoticesData] = useState([
@@ -97,6 +100,23 @@ const NoticeManagement = () => {
     setIsAddNoticeModalOpen(false);
   };
 
+  const handleEditNotice = (updatedNotice: NoticeData) => {
+    setNoticesData(noticesData.map(notice => 
+      notice.id === updatedNotice.id ? updatedNotice : notice
+    ));
+    
+    toast("Notice updated", {
+      description: "The notice has been successfully updated"
+    });
+    
+    setIsEditNoticeModalOpen(false);
+  };
+
+  const handleEditClick = (notice: NoticeData) => {
+    setSelectedNotice(notice);
+    setIsEditNoticeModalOpen(true);
+  };
+
   const handleDeleteNotice = (id: number) => {
     setNoticesData(noticesData.filter(notice => notice.id !== id));
     
@@ -158,7 +178,12 @@ const NoticeManagement = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="h-8 w-8 p-0"
+                    onClick={() => handleEditClick(notice)}
+                  >
                     <Edit size={16} />
                   </Button>
                   <Button 
@@ -181,6 +206,13 @@ const NoticeManagement = () => {
         isOpen={isAddNoticeModalOpen}
         onClose={() => setIsAddNoticeModalOpen(false)}
         onSave={handleAddNotice}
+      />
+
+      <EditNoticeModal
+        isOpen={isEditNoticeModalOpen}
+        onClose={() => setIsEditNoticeModalOpen(false)}
+        onSave={handleEditNotice}
+        notice={selectedNotice}
       />
     </div>
   );

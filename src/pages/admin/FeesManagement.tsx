@@ -6,12 +6,15 @@ import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/sonner";
 import AddFeeModal, { Student, FeeData } from "@/components/modals/AddFeeModal";
 import StudentFeeHistoryModal from "@/components/modals/StudentFeeHistoryModal";
+import FeeDetailsModal from "@/components/modals/FeeDetailsModal";
 
 const FeesManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddFeeModalOpen, setIsAddFeeModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<{name: string, class: string} | null>(null);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [isFeeDetailsModalOpen, setIsFeeDetailsModalOpen] = useState(false);
+  const [selectedFee, setSelectedFee] = useState<any>(null);
   
   // Mock students data
   const students: Student[] = [
@@ -27,14 +30,14 @@ const FeesManagement = () => {
   
   // Mock fee data
   const [feesData, setFeesData] = useState([
-    { id: 1, studentId: 1, student: 'Alice Johnson', class: '10-A', feeType: 'Annual Fee', amount: 25000, dueDate: '2025-06-30', status: 'Paid' },
+    { id: 1, studentId: 1, student: 'Alice Johnson', class: '10-A', feeType: 'Annual Fee', amount: 25000, dueDate: '2025-06-30', status: 'Paid', paidDate: '2025-06-20', paidAmount: 25000 },
     { id: 2, studentId: 2, student: 'Bob Smith', class: '10-A', feeType: 'Annual Fee', amount: 25000, dueDate: '2025-06-30', status: 'Pending' },
-    { id: 3, studentId: 3, student: 'Charlie Brown', class: '9-B', feeType: 'Annual Fee', amount: 22000, dueDate: '2025-06-30', status: 'Partially Paid' },
-    { id: 4, studentId: 4, student: 'David Clark', class: '9-B', feeType: 'Transport Fee', amount: 8000, dueDate: '2025-06-15', status: 'Paid' },
+    { id: 3, studentId: 3, student: 'Charlie Brown', class: '9-B', feeType: 'Annual Fee', amount: 22000, dueDate: '2025-06-30', status: 'Partially Paid', paidDate: '2025-06-15', paidAmount: 10000 },
+    { id: 4, studentId: 4, student: 'David Clark', class: '9-B', feeType: 'Transport Fee', amount: 8000, dueDate: '2025-06-15', status: 'Paid', paidDate: '2025-06-10', paidAmount: 8000 },
     { id: 5, studentId: 5, student: 'Emma Davis', class: '8-C', feeType: 'Annual Fee', amount: 20000, dueDate: '2025-06-30', status: 'Pending' },
-    { id: 6, studentId: 6, student: 'Frank Wilson', class: '8-C', feeType: 'Transport Fee', amount: 8000, dueDate: '2025-06-15', status: 'Paid' },
+    { id: 6, studentId: 6, student: 'Frank Wilson', class: '8-C', feeType: 'Transport Fee', amount: 8000, dueDate: '2025-06-15', status: 'Paid', paidDate: '2025-06-05', paidAmount: 8000 },
     { id: 7, studentId: 7, student: 'Grace Taylor', class: '7-A', feeType: 'Annual Fee', amount: 18000, dueDate: '2025-06-30', status: 'Pending' },
-    { id: 8, studentId: 8, student: 'Harry Moore', class: '7-A', feeType: 'Lab Fee', amount: 5000, dueDate: '2025-06-20', status: 'Paid' }
+    { id: 8, studentId: 8, student: 'Harry Moore', class: '7-A', feeType: 'Lab Fee', amount: 5000, dueDate: '2025-06-20', status: 'Paid', paidDate: '2025-06-15', paidAmount: 5000 }
   ]);
   
   // Mock fee history data
@@ -101,6 +104,55 @@ const FeesManagement = () => {
     setIsHistoryModalOpen(true);
   };
 
+  const viewFeeDetails = (fee: any) => {
+    setSelectedFee(fee);
+    setIsFeeDetailsModalOpen(true);
+  };
+
+  const handleFeeStatusChange = (id: number, newStatus: string) => {
+    setFeesData(prevData => 
+      prevData.map(fee => {
+        if (fee.id === id) {
+          const updatedFee = {
+            ...fee,
+            status: newStatus,
+            paidDate: newStatus === 'Paid' ? new Date().toISOString().split('T')[0] : fee.paidDate,
+            paidAmount: newStatus === 'Paid' ? fee.amount : 
+                       newStatus === 'Partially Paid' ? Math.floor(fee.amount * 0.5) : fee.paidAmount
+          };
+          
+          // Also update the selected fee if it's currently being viewed
+          if (selectedFee && selectedFee.id === id) {
+            setSelectedFee(updatedFee);
+          }
+          
+          return updatedFee;
+        }
+        return fee;
+      })
+    );
+    
+    toast(`Fee status updated`, {
+      description: `The fee status has been changed to ${newStatus}`
+    });
+  };
+
+  const handleSendNotification = (studentId: number, student: string, feeType: string) => {
+    toast(`Reminder sent`, {
+      description: `Payment reminder for ${feeType} has been sent to ${student}`
+    });
+  };
+
+  // Calculate totals
+  const totalFeesCollection = feesData.reduce((total, fee) => total + fee.amount, 0);
+  const feesCollected = feesData
+    .filter(fee => fee.status === 'Paid')
+    .reduce((total, fee) => total + fee.amount, 0) +
+    feesData
+    .filter(fee => fee.status === 'Partially Paid' && fee.paidAmount)
+    .reduce((total, fee) => total + (fee.paidAmount || 0), 0);
+  const pendingFees = totalFeesCollection - feesCollected;
+
   return (
     <div className="space-y-6">
       <div>
@@ -165,13 +217,22 @@ const FeesManagement = () => {
                     </span>
                   </td>
                   <td className="py-3 px-4">
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => viewStudentHistory(fee.student, fee.class)}
-                    >
-                      View
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => viewFeeDetails(fee)}
+                      >
+                        View
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => viewStudentHistory(fee.student, fee.class)}
+                      >
+                        History
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -186,21 +247,21 @@ const FeesManagement = () => {
             <p className="dashboard-label">Total Fees Collection</p>
             <DollarSign className="text-blue-500" />
           </div>
-          <p className="dashboard-stat mt-2">₹1,56,000</p>
+          <p className="dashboard-stat mt-2">₹{totalFeesCollection.toLocaleString()}</p>
         </div>
         <div className="dashboard-card bg-soft-green">
           <div className="flex justify-between items-center">
             <p className="dashboard-label">Fees Collected</p>
             <DollarSign className="text-green-500" />
           </div>
-          <p className="dashboard-stat mt-2">₹98,000</p>
+          <p className="dashboard-stat mt-2">₹{feesCollected.toLocaleString()}</p>
         </div>
         <div className="dashboard-card bg-soft-orange">
           <div className="flex justify-between items-center">
             <p className="dashboard-label">Pending Fees</p>
             <DollarSign className="text-orange-500" />
           </div>
-          <p className="dashboard-stat mt-2">₹58,000</p>
+          <p className="dashboard-stat mt-2">₹{pendingFees.toLocaleString()}</p>
         </div>
       </div>
 
@@ -216,6 +277,14 @@ const FeesManagement = () => {
         onClose={() => setIsHistoryModalOpen(false)}
         student={selectedStudent}
         feeHistory={feeHistory}
+      />
+
+      <FeeDetailsModal
+        isOpen={isFeeDetailsModalOpen}
+        onClose={() => setIsFeeDetailsModalOpen(false)}
+        feeData={selectedFee}
+        onStatusChange={handleFeeStatusChange}
+        onSendNotification={handleSendNotification}
       />
     </div>
   );
