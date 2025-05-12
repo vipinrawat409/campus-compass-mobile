@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "@/components/ui/sonner";
 
 const NoticesView = () => {
   const { user } = useAuth();
