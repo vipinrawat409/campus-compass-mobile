@@ -8,7 +8,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { School, Users, GraduationCap, UserCheck, MapPin, Phone, Mail } from 'lucide-react';
+import { School, Users, GraduationCap, UserCheck, MapPin, Phone, Mail, User2 } from 'lucide-react';
 
 interface InstituteDetailsModalProps {
   isOpen: boolean;
@@ -101,7 +101,7 @@ const InstituteDetailsModal = ({
                 
                 {institute.principal && (
                   <div className="flex items-start gap-2">
-                    <User size={16} className="text-gray-500 mt-1" />
+                    <User2 size={16} className="text-gray-500 mt-1" />
                     <div>
                       <p className="text-sm font-medium">Principal</p>
                       <p className="text-sm text-gray-600">{institute.principal}</p>
