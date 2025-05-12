@@ -4,17 +4,28 @@ import { Bell, Search, Plus, Calendar, User, Star, Edit, Trash2 } from 'lucide-r
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/components/ui/sonner";
-import AddNoticeModal, { NoticeData } from '@/components/modals/AddNoticeModal';
-import EditNoticeModal from '@/components/modals/EditNoticeModal';
+import AddNoticeModal, { NoticeData as AddNoticeData } from '@/components/modals/AddNoticeModal';
+import EditNoticeModal, { NoticeData as EditNoticeData } from '@/components/modals/EditNoticeModal';
+
+// Combined notice data type to satisfy both modals
+interface NoticeDataWithId {
+  id: number;
+  title: string;
+  content: string;
+  date: string;
+  author: string;
+  target: string;
+  important: boolean;
+}
 
 const NoticeManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddNoticeModalOpen, setIsAddNoticeModalOpen] = useState(false);
   const [isEditNoticeModalOpen, setIsEditNoticeModalOpen] = useState(false);
-  const [selectedNotice, setSelectedNotice] = useState<NoticeData | null>(null);
+  const [selectedNotice, setSelectedNotice] = useState<NoticeDataWithId | null>(null);
   
   // Mock notices data
-  const [noticesData, setNoticesData] = useState([
+  const [noticesData, setNoticesData] = useState<NoticeDataWithId[]>([
     { 
       id: 1, 
       title: 'Annual Day Celebration', 
@@ -85,8 +96,8 @@ const NoticeManagement = () => {
     }
   };
 
-  const handleAddNotice = (formData: NoticeData) => {
-    const newNotice = {
+  const handleAddNotice = (formData: AddNoticeData) => {
+    const newNotice: NoticeDataWithId = {
       ...formData,
       id: noticesData.length + 1
     };
@@ -100,9 +111,9 @@ const NoticeManagement = () => {
     setIsAddNoticeModalOpen(false);
   };
 
-  const handleEditNotice = (updatedNotice: NoticeData) => {
+  const handleEditNotice = (updatedNotice: EditNoticeData) => {
     setNoticesData(noticesData.map(notice => 
-      notice.id === updatedNotice.id ? updatedNotice : notice
+      notice.id === updatedNotice.id ? updatedNotice as NoticeDataWithId : notice
     ));
     
     toast("Notice updated", {
@@ -112,7 +123,7 @@ const NoticeManagement = () => {
     setIsEditNoticeModalOpen(false);
   };
 
-  const handleEditClick = (notice: NoticeData) => {
+  const handleEditClick = (notice: NoticeDataWithId) => {
     setSelectedNotice(notice);
     setIsEditNoticeModalOpen(true);
   };
@@ -212,7 +223,7 @@ const NoticeManagement = () => {
         isOpen={isEditNoticeModalOpen}
         onClose={() => setIsEditNoticeModalOpen(false)}
         onSave={handleEditNotice}
-        notice={selectedNotice}
+        notice={selectedNotice as EditNoticeData}
       />
     </div>
   );

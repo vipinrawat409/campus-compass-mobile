@@ -261,7 +261,6 @@ const LeaveApproval = () => {
     
     // Show toast notification
     toast({
-      title: action === 'approve' ? "Leave Approved" : "Leave Rejected",
       description: `The leave application has been ${action === 'approve' ? 'approved' : 'rejected'} successfully.`
     });
     
