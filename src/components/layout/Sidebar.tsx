@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
@@ -163,7 +162,7 @@ const Sidebar = () => {
       title: "Notice",
       icon: <Bell size={18} />,
       path: "/dashboard/notices-view",
-      roles: ['student', 'parent', 'staff']
+      roles: ['student', 'parent', 'staff', 'teacher']
     },
     {
       title: "Leave",

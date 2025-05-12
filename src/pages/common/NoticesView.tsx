@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Bell, Search, Calendar, Eye, Download } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,6 +10,7 @@ const NoticesView = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [selectedNotice, setSelectedNotice] = useState<number | null>(null);
+  const [readNotices, setReadNotices] = useState<number[]>([]);
   
   if (!user) return null;
 
@@ -94,6 +94,15 @@ const NoticesView = () => {
     }
   };
 
+  const handleMarkAsRead = (id: number) => {
+    if (!readNotices.includes(id)) {
+      setReadNotices([...readNotices, id]);
+      toast("Notice marked as read", {
+        description: "This notice has been marked as read"
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -130,7 +139,7 @@ const NoticesView = () => {
                     key={notice.id} 
                     className={`border rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
                       selectedNotice === notice.id ? 'border-primary bg-soft-blue/20' : ''
-                    }`}
+                    } ${readNotices.includes(notice.id) ? 'bg-gray-50/70' : ''}`}
                     onClick={() => setSelectedNotice(notice.id)}
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
@@ -156,6 +165,9 @@ const NoticesView = () => {
                       </div>
                     </div>
                     <p className="text-gray-600 mt-2 line-clamp-2">{notice.content}</p>
+                    {readNotices.includes(notice.id) && (
+                      <div className="mt-2 text-xs text-green-600 font-medium">Read</div>
+                    )}
                   </div>
                 ))
               ) : (
@@ -171,6 +183,8 @@ const NoticesView = () => {
           {selectedNotice ? (
             <NoticeDetail 
               notice={noticesData.find(notice => notice.id === selectedNotice)!}
+              isRead={readNotices.includes(selectedNotice)}
+              onMarkAsRead={() => handleMarkAsRead(selectedNotice)}
             />
           ) : (
             <div className="card-wrapper h-full flex flex-col items-center justify-center py-10 text-center text-gray-500">
@@ -185,7 +199,13 @@ const NoticesView = () => {
   );
 };
 
-const NoticeDetail = ({ notice }: { notice: any }) => {
+interface NoticeDetailProps {
+  notice: any;
+  isRead: boolean;
+  onMarkAsRead: () => void;
+}
+
+const NoticeDetail = ({ notice, isRead, onMarkAsRead }: NoticeDetailProps) => {
   return (
     <div className="card-wrapper sticky top-4">
       <div className="mb-4 pb-4 border-b">
@@ -235,9 +255,15 @@ const NoticeDetail = ({ notice }: { notice: any }) => {
         <div className={`px-2 py-1 rounded-full text-xs font-medium ${getTargetBadge(notice.target)}`}>
           For: {notice.target}
         </div>
-        <Button variant="outline" size="sm" className="flex items-center gap-1">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="flex items-center gap-1"
+          onClick={onMarkAsRead}
+          disabled={isRead}
+        >
           <Eye size={14} />
-          Mark as Read
+          {isRead ? 'Marked as Read' : 'Mark as Read'}
         </Button>
       </div>
     </div>

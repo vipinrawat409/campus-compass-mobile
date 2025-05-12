@@ -1,487 +1,167 @@
 
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Plus, Calendar, FileText, ChevronDown } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, FileText } from 'lucide-react';
-import { useToast } from "@/components/ui/use-toast";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-
-interface Child {
-  id: number;
-  name: string;
-  class: string;
-  rollNo: string;
-}
-
-interface LeaveItem {
-  id: number;
-  childName: string;
-  childClass: string;
-  type: string;
-  fromDate: string;
-  toDate: string;
-  days: number;
-  reason: string;
-  status: string;
-  appliedOn: string;
-  approvedBy?: string;
-  approvedOn?: string;
-  rejectedBy?: string;
-  rejectedOn?: string;
-  rejectionReason?: string;
-}
+import ApplyLeaveModal from '@/components/modals/ApplyLeaveModal';
+import { toast } from "@/components/ui/sonner";
 
 const ParentLeave = () => {
-  const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState('pending');
-  const [showNewLeaveForm, setShowNewLeaveForm] = useState(false);
-  const [showLeaveDetails, setShowLeaveDetails] = useState(false);
-  const [selectedLeave, setSelectedLeave] = useState<LeaveItem | null>(null);
+  const [isApplyLeaveModalOpen, setIsApplyLeaveModalOpen] = useState(false);
   
-  const [leaveData, setLeaveData] = useState({
-    childId: '',
-    fromDate: '',
-    toDate: '',
-    type: '',
-    reason: '',
-    document: null
-  });
-
   // Mock children data
-  const children: Child[] = [
-    { id: 1, name: "Sarah Wilson", class: "10-A", rollNo: "SD201" },
-    { id: 2, name: "John Wilson", class: "7-B", rollNo: "SD202" }
+  const children = [
+    { id: 1, name: "Sarah Wilson", class: "10-A" },
+    { id: 2, name: "John Wilson", class: "7-B" }
   ];
-
-  const leaveTypes = [
-    { id: 'medical', label: 'Medical Leave' },
-    { id: 'family', label: 'Family Event' },
-    { id: 'religious', label: 'Religious Function' },
-    { id: 'sports', label: 'Sports Event' },
-    { id: 'other', label: 'Other' }
-  ];
-
-  // Mock leave history
-  const [leaveHistory] = useState<LeaveItem[]>([
+  
+  const [selectedChild, setSelectedChild] = useState(children[0]);
+  
+  // Mock leave data
+  const [leaves, setLeaves] = useState([
     {
       id: 1,
-      childName: 'Sarah Wilson',
-      childClass: '10-A',
-      type: 'Medical Leave',
-      fromDate: '2025-04-10',
-      toDate: '2025-04-12',
-      days: 3,
-      reason: 'Fever and cold',
-      status: 'approved',
-      appliedOn: '2025-04-05',
-      approvedBy: 'Mr. Johnson',
-      approvedOn: '2025-04-06'
+      childId: 1,
+      startDate: '2025-05-15',
+      endDate: '2025-05-15',
+      reason: 'Medical appointment',
+      status: 'Approved',
+      appliedOn: '2025-05-10'
     },
     {
       id: 2,
-      childName: 'John Wilson',
-      childClass: '7-B',
-      type: 'Family Event',
-      fromDate: '2025-05-20',
-      toDate: '2025-05-22',
-      days: 3,
-      reason: 'Family wedding',
-      status: 'pending',
-      appliedOn: '2025-05-05',
-    },
-    {
-      id: 3,
-      childName: 'Sarah Wilson',
-      childClass: '10-A',
-      type: 'Sports Event',
-      fromDate: '2025-03-21',
-      toDate: '2025-03-21',
-      days: 1,
-      reason: 'Inter-school competition',
-      status: 'rejected',
-      appliedOn: '2025-03-18',
-      rejectedBy: 'Mrs. Davis',
-      rejectedOn: '2025-03-19',
-      rejectionReason: 'Important test on the same day'
+      childId: 2,
+      startDate: '2025-06-05',
+      endDate: '2025-06-06',
+      reason: 'Family function',
+      status: 'Pending',
+      appliedOn: '2025-05-12'
     }
   ]);
-
-  const handleSubmitLeave = (e) => {
-    e.preventDefault();
+  
+  const handleApplyLeave = (formData: any) => {
+    const newLeave = {
+      id: leaves.length + 1,
+      childId: selectedChild.id,
+      startDate: formData.startDate.toISOString().split('T')[0],
+      endDate: formData.endDate ? formData.endDate.toISOString().split('T')[0] : formData.startDate.toISOString().split('T')[0],
+      reason: formData.reason,
+      status: 'Pending',
+      appliedOn: new Date().toISOString().split('T')[0]
+    };
     
-    // Validate form
-    if (!leaveData.childId || !leaveData.fromDate || !leaveData.toDate || !leaveData.type || !leaveData.reason) {
-      toast({
-        title: "Error",
-        description: "Please fill all required fields",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Calculate number of days
-    const from = new Date(leaveData.fromDate);
-    const to = new Date(leaveData.toDate);
-    if (from > to) {
-      toast({
-        title: "Error",
-        description: "From date cannot be after to date",
-        variant: "destructive" 
-      });
-      return;
-    }
-    
-    // Mock API call to submit leave
-    toast({
-      title: "Leave application submitted",
-      description: "Your child's leave application has been submitted for approval"
-    });
-    
-    // Reset form and close modal
-    setLeaveData({
-      childId: '',
-      fromDate: '',
-      toDate: '',
-      type: '',
-      reason: '',
-      document: null
-    });
-    setShowNewLeaveForm(false);
+    setLeaves([...leaves, newLeave]);
   };
   
-  const handleInputChange = (field, value) => {
-    setLeaveData(prev => ({ ...prev, [field]: value }));
-  };
-
-  // Filter leaves by status
-  const filteredLeaves = leaveHistory.filter(leave => {
-    if (activeTab === 'all') return true;
-    return leave.status === activeTab;
-  });
+  // Filter leaves for the selected child
+  const filteredLeaves = leaves.filter(leave => leave.childId === selectedChild.id);
   
-  // Function to get status badge color
-  const getStatusBadge = (status) => {
+  // Get status badge color
+  const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'approved':
+      case 'Approved':
         return 'bg-green-100 text-green-800';
-      case 'rejected':
+      case 'Rejected':
         return 'bg-red-100 text-red-800';
+      case 'Pending':
+        return 'bg-yellow-100 text-yellow-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
   };
   
-  const getSelectedChild = (childId) => {
-    return children.find(child => child.id === parseInt(childId, 10));
-  };
-  
-  const handleViewLeaveDetails = (leave: LeaveItem) => {
-    setSelectedLeave(leave);
-    setShowLeaveDetails(true);
-  };
-
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="page-title">Student Leave Management</h1>
-        <p className="text-gray-500">Apply for and track your child's leave applications</p>
-      </div>
-      
-      <div className="card-wrapper p-6 border rounded-lg">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <h2 className="text-lg font-semibold">Leave Applications</h2>
-          <Button className="flex gap-2" onClick={() => setShowNewLeaveForm(true)}>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold">Leave Management</h1>
+        <div className="flex flex-col sm:flex-row gap-3">
+          {children.length > 1 && (
+            <Select
+              value={selectedChild.id.toString()}
+              onValueChange={(value) => {
+                const child = children.find(c => c.id.toString() === value);
+                if (child) setSelectedChild(child);
+              }}
+            >
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue placeholder="Select child" />
+              </SelectTrigger>
+              <SelectContent>
+                {children.map((child) => (
+                  <SelectItem key={child.id} value={child.id.toString()}>
+                    {child.name} ({child.class})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <Button 
+            onClick={() => setIsApplyLeaveModalOpen(true)}
+            className="flex gap-2"
+          >
+            <Plus size={16} />
             Apply for Leave
           </Button>
         </div>
-        
-        <Tabs defaultValue="pending" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="pending">Pending</TabsTrigger>
-            <TabsTrigger value="approved">Approved</TabsTrigger>
-            <TabsTrigger value="rejected">Rejected</TabsTrigger>
-            <TabsTrigger value="all">All</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value={activeTab}>
-            <div className="overflow-x-auto mt-4">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Child Name</TableHead>
-                    <TableHead>Class</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>From</TableHead>
-                    <TableHead>To</TableHead>
-                    <TableHead>Days</TableHead>
-                    <TableHead>Applied On</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredLeaves.length > 0 ? (
-                    filteredLeaves.map((leave) => (
-                      <TableRow key={leave.id}>
-                        <TableCell>{leave.childName}</TableCell>
-                        <TableCell>{leave.childClass}</TableCell>
-                        <TableCell>{leave.type}</TableCell>
-                        <TableCell>{new Date(leave.fromDate).toLocaleDateString()}</TableCell>
-                        <TableCell>{new Date(leave.toDate).toLocaleDateString()}</TableCell>
-                        <TableCell>{leave.days}</TableCell>
-                        <TableCell>{new Date(leave.appliedOn).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          <span className={`px-2 py-1 text-xs rounded-full ${getStatusBadge(leave.status)}`}>
-                            {leave.status.charAt(0).toUpperCase() + leave.status.slice(1)}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => handleViewLeaveDetails(leave)}
-                          >
-                            View Details
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={9} className="text-center py-4">
-                        No leave applications found.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </TabsContent>
-        </Tabs>
       </div>
       
-      {/* New Leave Application Dialog with fixed max-height and overflow */}
-      <Dialog open={showNewLeaveForm} onOpenChange={setShowNewLeaveForm}>
-        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Apply for Student Leave</DialogTitle>
-          </DialogHeader>
-          
-          <form onSubmit={handleSubmitLeave} className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="childId">Select Child</Label>
-              <Select
-                value={leaveData.childId}
-                onValueChange={(value) => handleInputChange('childId', value)}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select child" />
-                </SelectTrigger>
-                <SelectContent>
-                  {children.map((child) => (
-                    <SelectItem key={child.id} value={child.id.toString()}>
-                      {child.name} ({child.class})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="fromDate">From Date</Label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
-                  <Input
-                    id="fromDate"
-                    type="date"
-                    value={leaveData.fromDate}
-                    onChange={(e) => handleInputChange('fromDate', e.target.value)}
-                    required
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="toDate">To Date</Label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
-                  <Input
-                    id="toDate"
-                    type="date"
-                    value={leaveData.toDate}
-                    onChange={(e) => handleInputChange('toDate', e.target.value)}
-                    required
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="leaveType">Leave Type</Label>
-              <Select
-                value={leaveData.type}
-                onValueChange={(value) => handleInputChange('type', value)}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select leave type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {leaveTypes.map((type) => (
-                    <SelectItem key={type.id} value={type.id}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="reason">Reason for Leave</Label>
-              <div className="relative">
-                <FileText className="absolute left-3 top-4 h-4 w-4 text-gray-500" />
-                <Textarea
-                  id="reason"
-                  value={leaveData.reason}
-                  onChange={(e) => handleInputChange('reason', e.target.value)}
-                  placeholder="Please provide details for the leave request"
-                  required
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="document">Supporting Document (Optional)</Label>
-              <Input
-                id="document"
-                type="file"
-                onChange={(e) => handleInputChange('document', e.target.files[0])}
-              />
-              <p className="text-xs text-gray-500">
-                Upload medical certificate or other relevant files
-              </p>
-            </div>
-            
-            {leaveData.childId && (
-              <div className="p-3 bg-blue-50 rounded-md">
-                <p className="text-sm font-medium text-blue-800">
-                  Selected Student: {getSelectedChild(leaveData.childId)?.name} ({getSelectedChild(leaveData.childId)?.class})
-                </p>
-                <p className="text-xs text-blue-700 mt-1">
-                  Roll No: {getSelectedChild(leaveData.childId)?.rollNo}
-                </p>
-              </div>
-            )}
-            
-            <DialogFooter className="pt-4">
-              <Button variant="outline" type="button" onClick={() => setShowNewLeaveForm(false)}>
-                Cancel
-              </Button>
-              <Button type="submit">Submit Leave Request</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Leave Details Dialog */}
-      <Dialog open={showLeaveDetails} onOpenChange={setShowLeaveDetails}>
-        <DialogContent className="sm:max-w-[550px]">
-          <DialogHeader>
-            <DialogTitle>Leave Application Details</DialogTitle>
-          </DialogHeader>
-          
-          {selectedLeave && (
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="font-medium">{selectedLeave.childName}</h3>
-                  <p className="text-sm text-gray-500">{selectedLeave.childClass}</p>
-                </div>
-                <span className={`px-2 py-1 text-xs rounded-full ${getStatusBadge(selectedLeave.status)}`}>
-                  {selectedLeave.status.charAt(0).toUpperCase() + selectedLeave.status.slice(1)}
-                </span>
-              </div>
-              
-              <div>
-                <p className="text-sm text-gray-500">Leave Type</p>
-                <p className="font-medium">{selectedLeave.type}</p>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500">From Date</p>
-                  <p className="flex items-center gap-1">
-                    <Calendar size={14} className="text-gray-500" />
-                    {new Date(selectedLeave.fromDate).toLocaleDateString()}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">To Date</p>
-                  <p className="flex items-center gap-1">
-                    <Calendar size={14} className="text-gray-500" />
-                    {new Date(selectedLeave.toDate).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-              
-              <div>
-                <p className="text-sm text-gray-500">Duration</p>
-                <p>{selectedLeave.days} day{selectedLeave.days > 1 ? 's' : ''}</p>
-              </div>
-              
-              <div>
-                <p className="text-sm text-gray-500">Reason</p>
-                <div className="p-3 bg-gray-50 rounded-md mt-1">
-                  <p className="text-sm">{selectedLeave.reason}</p>
-                </div>
-              </div>
-              
-              <div>
-                <p className="text-sm text-gray-500">Applied On</p>
-                <p>{new Date(selectedLeave.appliedOn).toLocaleDateString()}</p>
-              </div>
-              
-              {selectedLeave.status === 'approved' && selectedLeave.approvedBy && (
-                <div className="border-t pt-3">
-                  <p className="text-sm text-gray-500">Approved By</p>
-                  <p>{selectedLeave.approvedBy} on {selectedLeave.approvedOn && new Date(selectedLeave.approvedOn).toLocaleDateString()}</p>
-                </div>
-              )}
-              
-              {selectedLeave.status === 'rejected' && selectedLeave.rejectionReason && (
-                <div className="border-t pt-3">
-                  <p className="text-sm text-gray-500">Rejected By</p>
-                  <p>{selectedLeave.rejectedBy} on {selectedLeave.rejectedOn && new Date(selectedLeave.rejectedOn).toLocaleDateString()}</p>
-                  <p className="text-sm text-red-600 mt-2">Reason: {selectedLeave.rejectionReason}</p>
-                </div>
-              )}
-              
-              <div className="flex justify-end mt-6">
-                <Button onClick={() => setShowLeaveDetails(false)}>Close</Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <div className="card-wrapper">
+        <h2 className="text-lg font-medium mb-4">
+          Leave Applications for {selectedChild.name}
+        </h2>
+        
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 text-gray-700">
+              <tr>
+                <th className="py-3 px-4 text-left">Date</th>
+                <th className="py-3 px-4 text-left">Applied On</th>
+                <th className="py-3 px-4 text-left">Reason</th>
+                <th className="py-3 px-4 text-left">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filteredLeaves.map((leave) => (
+                <tr key={leave.id} className="hover:bg-gray-50">
+                  <td className="py-3 px-4">
+                    {leave.startDate === leave.endDate ? 
+                      leave.startDate : 
+                      `${leave.startDate} to ${leave.endDate}`
+                    }
+                  </td>
+                  <td className="py-3 px-4">{leave.appliedOn}</td>
+                  <td className="py-3 px-4">{leave.reason}</td>
+                  <td className="py-3 px-4">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusBadge(leave.status)}`}>
+                      {leave.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        
+        {filteredLeaves.length === 0 && (
+          <div className="text-center py-8 text-gray-500">
+            <FileText className="h-12 w-12 mx-auto text-gray-300 mb-3" />
+            <p>No leave applications found for {selectedChild.name}.</p>
+            <Button 
+              onClick={() => setIsApplyLeaveModalOpen(true)} 
+              variant="outline" 
+              className="mt-4"
+            >
+              Apply for Leave
+            </Button>
+          </div>
+        )}
+      </div>
+      
+      <ApplyLeaveModal
+        isOpen={isApplyLeaveModalOpen}
+        onClose={() => setIsApplyLeaveModalOpen(false)}
+        onSubmit={handleApplyLeave}
+      />
     </div>
   );
 };

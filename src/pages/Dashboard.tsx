@@ -180,6 +180,22 @@ const SuperAdminDashboard = () => {
 };
 
 const AdminDashboard = () => {
+  const [selectedChild, setSelectedChild] = useState(null);
+
+  const handleApproveLeave = (id: number) => {
+    // In a real app, this would call an API
+    toast("Leave approved", {
+      description: "The leave application has been approved"
+    });
+  };
+  
+  const handleRejectLeave = (id: number) => {
+    // In a real app, this would call an API
+    toast("Leave rejected", {
+      description: "The leave application has been rejected"
+    });
+  };
+  
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -238,19 +254,25 @@ const AdminDashboard = () => {
               name="John Doe" 
               role="Teacher" 
               date="22-24 May 2025" 
-              reason="Family function" 
+              reason="Family function"
+              onApprove={() => handleApproveLeave(1)}
+              onReject={() => handleRejectLeave(1)}
             />
             <LeaveItem 
               name="Sarah Johnson" 
               role="Staff" 
               date="20 May 2025" 
-              reason="Medical appointment" 
+              reason="Medical appointment"
+              onApprove={() => handleApproveLeave(2)}
+              onReject={() => handleRejectLeave(2)}
             />
             <LeaveItem 
               name="Michael Brown" 
               role="Teacher" 
               date="25-26 May 2025" 
-              reason="Personal reasons" 
+              reason="Personal reasons"
+              onApprove={() => handleApproveLeave(3)}
+              onReject={() => handleRejectLeave(3)}
             />
           </div>
         </div>
@@ -260,6 +282,22 @@ const AdminDashboard = () => {
 };
 
 const TeacherDashboard = () => {
+  const [selectedChild, setSelectedChild] = useState(null);
+
+  const handleApproveStudentLeave = (id: number) => {
+    // In a real app, this would call an API
+    toast("Leave approved", {
+      description: "The student leave application has been approved"
+    });
+  };
+  
+  const handleRejectStudentLeave = (id: number) => {
+    // In a real app, this would call an API
+    toast("Leave rejected", {
+      description: "The student leave application has been rejected"
+    });
+  };
+  
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -304,6 +342,8 @@ const TeacherDashboard = () => {
               date="22 May 2025"
               reason="Medical appointment"
               status="pending"
+              onApprove={() => handleApproveStudentLeave(1)}
+              onReject={() => handleRejectStudentLeave(1)}
             />
             <StudentLeaveItem 
               name="James Wilson"
@@ -311,6 +351,8 @@ const TeacherDashboard = () => {
               date="20-21 May 2025"
               reason="Family function"
               status="pending"
+              onApprove={() => handleApproveStudentLeave(2)}
+              onReject={() => handleRejectStudentLeave(2)}
             />
           </div>
         </div>
@@ -483,9 +525,23 @@ interface LeaveItemProps {
   role: string;
   date: string;
   reason: string;
+  onApprove?: () => void;
+  onReject?: () => void;
 }
 
-const LeaveItem = ({ name, role, date, reason }: LeaveItemProps) => {
+const LeaveItem = ({ name, role, date, reason, onApprove, onReject }: LeaveItemProps) => {
+  const [status, setStatus] = useState('Pending');
+  
+  const handleApprove = () => {
+    setStatus('Approved');
+    if (onApprove) onApprove();
+  };
+  
+  const handleReject = () => {
+    setStatus('Rejected');
+    if (onReject) onReject();
+  };
+  
   return (
     <div className="p-3 border border-gray-100 rounded-lg hover:bg-gray-50">
       <div className="flex justify-between items-start">
@@ -493,20 +549,36 @@ const LeaveItem = ({ name, role, date, reason }: LeaveItemProps) => {
           <h3 className="font-medium">{name}</h3>
           <span className="text-xs text-gray-500">{role}</span>
         </div>
-        <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Pending</span>
+        <span className={`text-xs px-2 py-1 rounded ${
+          status === 'Approved' 
+            ? 'bg-green-100 text-green-800' 
+            : status === 'Rejected'
+              ? 'bg-red-100 text-red-800'
+              : 'bg-yellow-100 text-yellow-800'
+        }`}>
+          {status}
+        </span>
       </div>
       <div className="mt-2 text-sm">
         <p><span className="text-gray-500">Date:</span> {date}</p>
         <p><span className="text-gray-500">Reason:</span> {reason}</p>
       </div>
-      <div className="mt-3 flex gap-2">
-        <button className="text-xs bg-primary text-white px-3 py-1 rounded hover:bg-primary/90">
-          Approve
-        </button>
-        <button className="text-xs bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">
-          Reject
-        </button>
-      </div>
+      {status === 'Pending' && (
+        <div className="mt-3 flex gap-2">
+          <button 
+            className="text-xs bg-primary text-white px-3 py-1 rounded hover:bg-primary/90"
+            onClick={handleApprove}
+          >
+            Approve
+          </button>
+          <button 
+            className="text-xs bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+            onClick={handleReject}
+          >
+            Reject
+          </button>
+        </div>
+      )}
     </div>
   );
 };
@@ -541,9 +613,23 @@ interface StudentLeaveItemProps {
   date: string;
   reason: string;
   status: string;
+  onApprove?: () => void;
+  onReject?: () => void;
 }
 
-const StudentLeaveItem = ({ name, className, date, reason, status }: StudentLeaveItemProps) => {
+const StudentLeaveItem = ({ name, className, date, reason, status: initialStatus, onApprove, onReject }: StudentLeaveItemProps) => {
+  const [status, setStatus] = useState(initialStatus);
+  
+  const handleApprove = () => {
+    setStatus('approved');
+    if (onApprove) onApprove();
+  };
+  
+  const handleReject = () => {
+    setStatus('rejected');
+    if (onReject) onReject();
+  };
+  
   return (
     <div className="p-3 border border-gray-100 rounded-lg hover:bg-gray-50">
       <div className="flex justify-between items-start">
@@ -551,20 +637,36 @@ const StudentLeaveItem = ({ name, className, date, reason, status }: StudentLeav
           <h3 className="font-medium">{name}</h3>
           <span className="text-xs text-gray-500">{className}</span>
         </div>
-        <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">{status}</span>
+        <span className={`text-xs px-2 py-1 rounded ${
+          status === 'approved' 
+            ? 'bg-green-100 text-green-800' 
+            : status === 'rejected'
+              ? 'bg-red-100 text-red-800'
+              : 'bg-yellow-100 text-yellow-800'
+        }`}>
+          {status.charAt(0).toUpperCase() + status.slice(1)}
+        </span>
       </div>
       <div className="mt-2 text-sm">
         <p><span className="text-gray-500">Date:</span> {date}</p>
         <p><span className="text-gray-500">Reason:</span> {reason}</p>
       </div>
-      <div className="mt-3 flex gap-2">
-        <button className="text-xs bg-primary text-white px-3 py-1 rounded hover:bg-primary/90">
-          Approve
-        </button>
-        <button className="text-xs bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">
-          Reject
-        </button>
-      </div>
+      {status === 'pending' && (
+        <div className="mt-3 flex gap-2">
+          <button 
+            className="text-xs bg-primary text-white px-3 py-1 rounded hover:bg-primary/90"
+            onClick={handleApprove}
+          >
+            Approve
+          </button>
+          <button 
+            className="text-xs bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+            onClick={handleReject}
+          >
+            Reject
+          </button>
+        </div>
+      )}
     </div>
   );
 };
