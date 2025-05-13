@@ -1,9 +1,10 @@
 
 import React, { useState } from 'react';
-import { Bell, Eye } from 'lucide-react';
+import { Bell, Eye, Check } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ChildSelector, { ChildData } from '@/components/parent/ChildSelector';
+import { toast } from '@/components/ui/sonner';
 
 interface Notice {
   id: number;
@@ -89,6 +90,15 @@ const ParentNotice = () => {
   // Count unread notices
   const unreadCount = filteredNotices.filter(notice => !notice.read).length;
   
+  // Mark notice as read explicitly
+  const markAsRead = (notice: Notice) => {
+    const updatedNotices = notices.map(n => 
+      n.id === notice.id ? { ...n, read: true } : n
+    );
+    setNotices(updatedNotices);
+    toast("Notice marked as read");
+  };
+  
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -136,15 +146,28 @@ const ParentNotice = () => {
                     {notice.content}
                   </p>
                 </div>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="flex gap-2"
-                  onClick={() => handleReadNotice(notice)}
-                >
-                  <Eye className="h-4 w-4" />
-                  View
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex gap-2"
+                    onClick={() => handleReadNotice(notice)}
+                  >
+                    <Eye className="h-4 w-4" />
+                    View
+                  </Button>
+                  {!notice.read && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex gap-2"
+                      onClick={() => markAsRead(notice)}
+                    >
+                      <Check className="h-4 w-4" />
+                      Mark as Read
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           ))}
@@ -179,6 +202,20 @@ const ParentNotice = () => {
               <div className="mt-4 whitespace-pre-line">
                 {selectedNotice.content}
               </div>
+              {!selectedNotice.read && (
+                <div className="mt-4 flex justify-end">
+                  <Button 
+                    size="sm"
+                    onClick={() => {
+                      markAsRead(selectedNotice);
+                      closeNoticeDialog();
+                    }}
+                  >
+                    <Check className="mr-2 h-4 w-4" />
+                    Mark as Read
+                  </Button>
+                </div>
+              )}
             </div>
           </DialogContent>
         )}

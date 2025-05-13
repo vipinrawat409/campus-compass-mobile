@@ -23,14 +23,15 @@ import {
 } from "@/components/ui/table";
 import { UserPlus, Search, Edit, Trash, User } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
+import EditUserModal from "@/components/modals/EditUserModal";
 
 // Sample user data
-const sampleUsers = [
-  { id: 1, name: 'John Smith', username: 'TC001', role: 'teacher', subject: 'Mathematics', status: 'active' },
-  { id: 2, name: 'Emily Johnson', username: 'TC002', role: 'teacher', subject: 'English', status: 'active' },
-  { id: 3, name: 'Michael Brown', username: 'ST001', role: 'staff', department: 'Administration', status: 'active' },
-  { id: 4, name: 'Jessica Lee', username: 'SD001', role: 'student', class: '10A', status: 'active' },
-  { id: 5, name: 'Robert Wilson', username: 'PR001', role: 'parent', student: 'Jessica Lee', status: 'active' },
+const initialUsers = [
+  { id: 1, name: 'John Smith', username: 'TC001', role: 'teacher', email: 'johnsmith@school.com', subject: 'Mathematics', phone: '555-123-4567', status: 'active' },
+  { id: 2, name: 'Emily Johnson', username: 'TC002', role: 'teacher', email: 'emilyjohnson@school.com', subject: 'English', phone: '555-234-5678', status: 'active' },
+  { id: 3, name: 'Michael Brown', username: 'ST001', role: 'staff', email: 'michaelbrown@school.com', department: 'Administration', phone: '555-345-6789', status: 'active' },
+  { id: 4, name: 'Jessica Lee', username: 'SD001', role: 'student', email: 'jessica.lee@school.com', class: '10A', phone: '555-456-7890', status: 'active' },
+  { id: 5, name: 'Robert Wilson', username: 'PR001', role: 'parent', email: 'robertwilson@email.com', student: 'Jessica Lee', phone: '555-567-8901', status: 'active' },
 ];
 
 const UserManagement = () => {
@@ -38,8 +39,13 @@ const UserManagement = () => {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [showCreateForm, setShowCreateForm] = useState<boolean>(false);
   const [newUserRole, setNewUserRole] = useState<string>("teacher");
+  const [users, setUsers] = useState(initialUsers);
+  
+  // State for edit modal
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
 
-  const filteredUsers = sampleUsers.filter(user => 
+  const filteredUsers = users.filter(user => 
     (activeTab === "all" || user.role === activeTab.slice(0, -1)) && 
     (user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
      user.username.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -54,9 +60,21 @@ const UserManagement = () => {
   };
 
   const handleDeleteUser = (id: number) => {
+    setUsers(users.filter(user => user.id !== id));
     toast("User deleted", {
       description: "User has been removed from the system."
     });
+  };
+
+  const handleEditUser = (user: any) => {
+    setSelectedUser(user);
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveUser = (updatedUser: any) => {
+    setUsers(users.map(user => 
+      user.id === updatedUser.id ? updatedUser : user
+    ));
   };
 
   return (
@@ -95,19 +113,39 @@ const UserManagement = () => {
               <TabsTrigger value="all">All</TabsTrigger>
             </TabsList>
             <TabsContent value="teachers" className="m-0">
-              <UsersTable users={filteredUsers} onDelete={handleDeleteUser} />
+              <UsersTable 
+                users={filteredUsers} 
+                onDelete={handleDeleteUser}
+                onEdit={handleEditUser} 
+              />
             </TabsContent>
             <TabsContent value="staff" className="m-0">
-              <UsersTable users={filteredUsers} onDelete={handleDeleteUser} />
+              <UsersTable 
+                users={filteredUsers} 
+                onDelete={handleDeleteUser}
+                onEdit={handleEditUser} 
+              />
             </TabsContent>
             <TabsContent value="students" className="m-0">
-              <UsersTable users={filteredUsers} onDelete={handleDeleteUser} />
+              <UsersTable 
+                users={filteredUsers} 
+                onDelete={handleDeleteUser}
+                onEdit={handleEditUser} 
+              />
             </TabsContent>
             <TabsContent value="parents" className="m-0">
-              <UsersTable users={filteredUsers} onDelete={handleDeleteUser} />
+              <UsersTable 
+                users={filteredUsers} 
+                onDelete={handleDeleteUser}
+                onEdit={handleEditUser} 
+              />
             </TabsContent>
             <TabsContent value="all" className="m-0">
-              <UsersTable users={filteredUsers} onDelete={handleDeleteUser} />
+              <UsersTable 
+                users={filteredUsers} 
+                onDelete={handleDeleteUser}
+                onEdit={handleEditUser} 
+              />
             </TabsContent>
           </Tabs>
         </CardContent>
@@ -185,6 +223,13 @@ const UserManagement = () => {
           </CardContent>
         </Card>
       )}
+
+      <EditUserModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        user={selectedUser}
+        onSave={handleSaveUser}
+      />
     </div>
   );
 };
@@ -192,10 +237,12 @@ const UserManagement = () => {
 // Users table component
 const UsersTable = ({ 
   users, 
-  onDelete 
+  onDelete,
+  onEdit
 }: { 
   users: any[],
-  onDelete: (id: number) => void 
+  onDelete: (id: number) => void,
+  onEdit: (user: any) => void 
 }) => {
   return (
     <div className="rounded-md border overflow-hidden">
@@ -233,7 +280,12 @@ const UsersTable = ({
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8"
+                        onClick={() => onEdit(user)}
+                      >
                         <Edit size={16} />
                       </Button>
                       <Button 
