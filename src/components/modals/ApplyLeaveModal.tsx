@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -22,12 +21,14 @@ interface ApplyLeaveModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: any) => void;
+  childName?: string; // Added childName as an optional prop
 }
 
 const ApplyLeaveModal = ({
   isOpen,
   onClose,
-  onSubmit
+  onSubmit,
+  childName
 }: ApplyLeaveModalProps) => {
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
@@ -91,7 +92,9 @@ const ApplyLeaveModal = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Apply for Leave</DialogTitle>
+          <DialogTitle>
+            {childName ? `Apply Leave for ${childName}` : 'Apply for Leave'}
+          </DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
