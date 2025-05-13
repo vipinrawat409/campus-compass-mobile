@@ -9,6 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { toast } from "@/components/ui/sonner";
+import MarkAttendanceButton from "@/components/admin/MarkAttendanceButton";
 
 import {
   Table,
@@ -39,16 +40,45 @@ const AttendanceManagement = () => {
   const [activeTab, setActiveTab] = useState<string>("teachers");
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [searchTerm, setSearchTerm] = useState<string>("");
+  
+  // Add state to track attendance updates
+  const [teacherAttendanceData, setTeacherAttendanceData] = useState(teacherAttendance);
+  const [staffAttendanceData, setStaffAttendanceData] = useState(staffAttendance);
 
-  const handleMarkAttendanceClick = () => {
-    toast("Camera mode activated", {
-      description: "Please ask staff/teachers to scan their face to mark attendance"
-    });
+  const handleAttendanceMarked = (staffId: number, name: string) => {
+    // Update the appropriate attendance list based on active tab
+    if (activeTab === "teachers") {
+      const updatedTeacherAttendance = teacherAttendanceData.map(item => {
+        if (item.id === staffId) {
+          return { 
+            ...item, 
+            status: 'present', 
+            inTime: format(new Date(), 'h:mm a')
+          };
+        }
+        return item;
+      });
+      setTeacherAttendanceData(updatedTeacherAttendance);
+    } else {
+      const updatedStaffAttendance = staffAttendanceData.map(item => {
+        if (item.id === staffId) {
+          return { 
+            ...item, 
+            status: 'present', 
+            inTime: format(new Date(), 'h:mm a')
+          };
+        }
+        return item;
+      });
+      setStaffAttendanceData(updatedStaffAttendance);
+    }
+    
+    toast.success(`${name}'s attendance has been marked for ${format(date || new Date(), "MMMM d, yyyy")}`);
   };
 
   const filteredData = activeTab === "teachers" 
-    ? teacherAttendance.filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()))
-    : staffAttendance.filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    ? teacherAttendanceData.filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    : staffAttendanceData.filter(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
     <div className="space-y-6">
@@ -73,10 +103,7 @@ const AttendanceManagement = () => {
             </PopoverContent>
           </Popover>
           
-          <Button onClick={handleMarkAttendanceClick} className="w-full sm:w-auto">
-            <CheckCircle className="mr-2 h-4 w-4" />
-            Mark Attendance
-          </Button>
+          <MarkAttendanceButton onAttendanceMarked={handleAttendanceMarked} />
         </div>
       </div>
 

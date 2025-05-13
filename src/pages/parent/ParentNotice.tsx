@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Bell, Eye, Check } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import ChildSelector, { ChildData } from '@/components/parent/ChildSelector';
 import { toast } from '@/components/ui/sonner';
 
@@ -187,12 +187,12 @@ const ParentNotice = () => {
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
               <DialogTitle>{selectedNotice.title}</DialogTitle>
+              <DialogDescription>
+                Date: {new Date(selectedNotice.date).toLocaleDateString()}
+              </DialogDescription>
             </DialogHeader>
             <div className="mt-2">
               <div className="flex flex-wrap gap-2 text-sm">
-                <span className="text-gray-500">
-                  Date: {new Date(selectedNotice.date).toLocaleDateString()}
-                </span>
                 {selectedNotice.important && (
                   <span className="px-2 py-0.5 bg-red-100 text-red-800 rounded-full text-xs">
                     Important
